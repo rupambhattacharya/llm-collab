@@ -757,17 +757,38 @@ All items implemented and tested:
 - `llm-collab --help` (shows all 6 commands)
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phase 3: MCP Server — NOT STARTED (next)
+### Phase 3: MCP Server — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| MCP server builder | `src/mcp/server.ts` | Done — McpServer with capability gating, tool registration |
+| File tools | `src/mcp/tools/file-tools.ts` | Done — `file_read`, `file_write`, `file_list`, `file_search` |
+| System tools | `src/mcp/tools/system-tools.ts` | Done — `shell_execute`, `env_get`, `system_info` |
+| MCP command | `src/commands/mcp.ts` | Done — `mcp stdio` and `mcp http --port` |
+| Capability gating | `src/mcp/server.ts` | Done — only registers tools for configured integrations |
+
+**Dependencies added:** `@modelcontextprotocol/sdk`
+
+**Tested commands:**
+- `llm-collab mcp --help` (shows stdio/http subcommands)
+- `llm-collab mcp http --help` (shows port option)
+- Typecheck passes (`npx tsc --noEmit`)
+
+### Phase 4: Service Integrations — NOT STARTED (next)
 
 **To implement:**
-1. `src/mcp/` — MCP server with tool registry, context, transports
-2. `src/mcp/tools/` — file, system, chronicle tool handlers
-3. `src/commands/mcp.ts` — `llm-collab mcp stdio|http`
-4. Capability gating (progressive disclosure)
+1. `src/services/github-service.ts` — Octokit REST + GraphQL
+2. `src/mcp/tools/github-tools.ts` — github_* MCP tools
+3. `src/commands/github.ts` — CLI commands
+4. `src/services/linear-service.ts` — @linear/sdk
+5. `src/mcp/tools/linear-tools.ts` — linear_* MCP tools
+6. `src/commands/linear.ts` — CLI commands
 
-**Dependencies to add:** `@modelcontextprotocol/sdk`
+**Dependencies to add:** `@octokit/rest`, `@octokit/graphql`, `@linear/sdk`
 
-### Phases 4–12 — NOT STARTED
+### Phases 5–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -781,6 +802,7 @@ src/
 │   ├── chat.ts              # Interactive AI chat REPL with streaming
 │   ├── config-cmd.ts        # Config get/set/list/path with audit logging
 │   ├── costs.ts             # Token usage and cost viewer
+│   ├── mcp.ts               # MCP server command (stdio/http)
 │   ├── relay.ts             # LLM relay proxy command
 │   └── setup.ts             # Interactive wizard with audit logging
 ├── config/
@@ -790,6 +812,11 @@ src/
 │   └── llm-costs.ts         # Model pricing data
 ├── hooks/
 │   └── audit-logger.ts      # JSONL audit logger singleton
+├── mcp/
+│   ├── server.ts            # MCP server builder with capability gating
+│   └── tools/
+│       ├── file-tools.ts    # file_read, file_write, file_list, file_search
+│       └── system-tools.ts  # shell_execute, env_get, system_info
 ├── services/
 │   ├── ai-service.ts        # Multi-provider LLM abstraction (Vercel AI SDK)
 │   ├── cost-tracker.ts      # Token/cost tracking with JSONL persistence
@@ -812,13 +839,13 @@ pnpm install
 pnpm typecheck              # Should pass clean
 npx tsx src/index.ts --help  # Should show all commands
 
-# Start Phase 3 (MCP Server)
-# 1. pnpm add @modelcontextprotocol/sdk
-# 2. Create src/mcp/ directory with context.ts, transports.ts
-# 3. Create src/mcp/tools/ with file-tools.ts, system-tools.ts
-# 4. Create src/commands/mcp.ts
-# 5. Wire into src/index.ts
-# 6. Test: llm-collab mcp stdio, llm-collab mcp http --port 3456
+# Start Phase 4 (Service Integrations)
+# 1. pnpm add @octokit/rest @octokit/graphql @linear/sdk
+# 2. Create src/services/github-service.ts
+# 3. Create src/mcp/tools/github-tools.ts
+# 4. Create src/commands/github.ts
+# 5. Wire into src/index.ts and src/mcp/server.ts
+# 6. Test: llm-collab github issues search "bug"
 ```
 
 ## Audit Log Format

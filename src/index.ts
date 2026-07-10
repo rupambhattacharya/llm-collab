@@ -8,6 +8,7 @@ import { auditCommand } from "./commands/audit.js";
 import { chatCommand } from "./commands/chat.js";
 import { relayCommand } from "./commands/relay.js";
 import { costsCommand } from "./commands/costs.js";
+import { mcpCommand } from "./commands/mcp.js";
 import { LLMCollabError } from "./utils/errors.js";
 import { logger } from "./utils/logger.js";
 import { audit } from "./hooks/audit-logger.js";
@@ -37,6 +38,7 @@ program.addCommand(auditCommand);
 program.addCommand(chatCommand);
 program.addCommand(relayCommand);
 program.addCommand(costsCommand);
+program.addCommand(mcpCommand);
 
 program.parseAsync(process.argv).then(() => {
   audit.sessionEnd(Date.now() - sessionStart);

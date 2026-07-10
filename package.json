@@ -34,6 +34,7 @@
     "@ai-sdk/anthropic": "^4.0.11",
     "@ai-sdk/openai": "^4.0.10",
     "@inquirer/prompts": "^8.5.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "ai": "^7.0.19",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
