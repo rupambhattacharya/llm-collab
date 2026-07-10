@@ -73,7 +73,6 @@ This is the llm-collab CLI — a Node.js TypeScript project with:
 - CLI commands via Commander.js (`src/commands/`)
 - Service integrations: GitHub (Octokit), Linear, GitLab, Jira (`src/services/`)
 - MCP server with 50+ tools (`src/services/mcp-service.ts`)
-- Multi-agent orchestration: Night Watch (autonomous), Day Watch (interactive)
 - Chronicle: persistent knowledge store with SQLite + embeddings + knowledge graph
 - Skills system: bundled markdown skills
 - Config: hierarchical (CLI args > env vars > `~/.llm-collab/config.json` > defaults)

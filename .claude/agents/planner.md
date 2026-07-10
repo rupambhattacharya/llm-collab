@@ -87,7 +87,7 @@ This is the llm-collab CLI — a Node.js TypeScript project:
 - **Services:** GitHub (Octokit), Linear (@linear/sdk), GitLab (@gitbeaker/rest), Jira
 - **MCP:** 50+ tools registered via @modelcontextprotocol/sdk
 - **Chronicle:** SQLite (better-sqlite3) + embeddings + knowledge graph
-- **Agents:** Night Watch (autonomous), Day Watch (interactive), sub-agents per domain
+- **Agents:** Multi-agent delegation (Orchestrator → Planner → Coder/Designer), sub-agents per domain
 - **Build:** tsup (bundler), pkg (binary), vitest (tests)
 - **Config:** Hierarchical — CLI args > env vars > `~/.llm-collab/config.json` > defaults
 
