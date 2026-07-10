@@ -9,8 +9,6 @@ An open-source CLI for AI-powered multi-agent collaboration. One tool to orchest
 - **Launch agents** — Start Claude Code, Codex, or other agents pre-configured with your project's MCP tools and knowledge
 - **MCP server** — 50+ tools exposing GitHub, Linear, file ops, and knowledge search to any MCP-compatible agent
 - **Chronicle** — Persistent project knowledge store with semantic search, knowledge graphs, and NL Q&A across sessions
-- **Night Watch** — Autonomous agent orchestration that pulls issues and processes them without human intervention
-- **Day Watch** — Interactive TUI for multi-agent chat with @mention routing
 - **Relay proxy** — Local HTTP proxy that injects API keys so any tool can use your LLM provider without per-tool config
 - **Cost tracking** — Per-session, per-model token usage and spend tracking with budget alerts
 
@@ -59,7 +57,6 @@ You only see what's relevant:
 - Tools for unconfigured integrations are hidden — not broken, just absent
 - Setup wizard asks only about integrations you want
 - Complexity routing sends simple tasks to fast models, complex ones to powerful models
-- Safety profiles scale from "none" (full autonomy) to "paranoid" (human approval for everything)
 
 ### Hooks & Auditing
 
@@ -67,10 +64,10 @@ Every agent action is observable:
 
 ```bash
 # View audit trail
-llm-collab audit --today
+llm-collab audit tail
 
 # Check costs
-llm-collab costs --this-week --by-model
+llm-collab costs --today
 
 # Budget alerts fire via webhook when threshold is hit
 ```
@@ -171,8 +168,6 @@ llm-collab chronicle push "Auth uses JWT with RS256, keys rotated weekly via AWS
 | `llm-collab mcp <transport>` | Start MCP server (stdio, http) |
 | `llm-collab relay <port>` | Start LLM relay proxy |
 | `llm-collab chronicle <cmd>` | Knowledge store operations |
-| `llm-collab nw <cmd>` | Night Watch (autonomous orchestration) |
-| `llm-collab dw` | Day Watch (interactive TUI) |
 | `llm-collab github <cmd>` | GitHub operations |
 | `llm-collab linear <cmd>` | Linear operations |
 | `llm-collab skills <cmd>` | Skill management |
@@ -190,15 +185,15 @@ llm-collab chronicle push "Auth uses JWT with RS256, keys rotated weekly via AWS
                            |
 +--------------------------v------------------------+
 |                Commands Layer                      |
-| agent | chat | mcp | relay | chronicle | nw | dw  |
+| agent | chat | mcp | relay | chronicle            |
 | github | linear | skills | config | setup         |
 +--------------------------+------------------------+
                            |
 +--------------------------v------------------------+
 |                Services Layer                      |
 | ai-service | mcp-service | chronicle-service      |
-| github-service | linear-service | coordinator     |
-| relay-server | cost-tracker | day-watch            |
+| github-service | linear-service                    |
+| relay-server | cost-tracker                        |
 +-----------+------------------------------+--------+
             |                              |
 +-----------v-----------+  +---------------v--------+
@@ -262,33 +257,6 @@ Tools are organized by domain and only registered when the integration is config
 | GitHub | `github_get_issue`, `github_search`, `github_create_pr`, ... | `github.token` |
 | Linear | `linear_get_issue`, `linear_search`, `linear_create_issue`, ... | `linear.api_key` |
 
-## Night Watch (Autonomous)
-
-Night Watch is an autonomous agent system that polls issue trackers and processes work items:
-
-```bash
-# Start with default coordinator config
-llm-collab nw start
-
-# Check active sessions
-llm-collab nw status
-
-# View execution history
-llm-collab nw audit
-
-# Stop gracefully
-llm-collab nw stop
-```
-
-### Safety Profiles
-
-| Profile | Behavior |
-|---------|----------|
-| `none` | Full autonomy, no gates |
-| `balanced` | PR size limits, secret scanning |
-| `strict` | Above + human approval for merges |
-| `paranoid` | Above + human approval for every commit |
-
 ## Skills
 
 Skills extend agent capabilities without code changes:
@@ -311,8 +279,8 @@ Every LLM call is tracked:
 # Today's usage
 llm-collab costs --today
 
-# By model
-llm-collab costs --by-model
+# This week
+llm-collab costs --week
 
 # Set budget alert ($50 default)
 llm-collab config set hooks.costs.budget_alert_usd 100

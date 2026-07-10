@@ -106,7 +106,6 @@ export const setupCommand = new Command("setup")
       chronicle: existing.chronicle,
       relay: existing.relay,
       hooks: existing.hooks,
-      night_watch: existing.night_watch,
     };
 
     const result = configSchema.safeParse(newConfig);

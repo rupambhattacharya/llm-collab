@@ -140,8 +140,6 @@
     <div class="boxes">
       <div class="box"><span class="name">agent</span><div class="desc">Claude/Codex/OpenCode launcher</div></div>
       <div class="box"><span class="name">mcp</span><div class="desc">MCP server (stdio/HTTP/SSE)</div></div>
-      <div class="box"><span class="name">dw</span><div class="desc">Day Watch TUI</div></div>
-      <div class="box"><span class="name">nw</span><div class="desc">Night Watch orchestrator</div></div>
       <div class="box"><span class="name">chronicle</span><div class="desc">Knowledge store</div></div>
       <div class="box"><span class="name">github</span><div class="desc">GitHub operations</div></div>
       <div class="box"><span class="name">linear</span><div class="desc">Linear operations</div></div>
@@ -164,11 +162,8 @@
       <div class="box"><span class="name">chronicle-service</span><div class="desc">Knowledge persistence, graph, search</div></div>
       <div class="box"><span class="name">github-service</span><div class="desc">GitHub REST/GraphQL via Octokit</div></div>
       <div class="box"><span class="name">linear-service</span><div class="desc">Linear GraphQL via @linear/sdk</div></div>
-      <div class="box"><span class="name">coordinator</span><div class="desc">Night Watch workflow engine</div></div>
       <div class="box"><span class="name">cost-tracker</span><div class="desc">Token usage &amp; cost accounting</div></div>
       <div class="box"><span class="name">relay-server</span><div class="desc">Express.js proxy with key injection</div></div>
-      <div class="box"><span class="name">day-watch</span><div class="desc">Session discovery &amp; management</div></div>
-      <div class="box"><span class="name">thread-manager</span><div class="desc">Thread CRUD, @mention routing</div></div>
     </div>
   </div>
 
@@ -409,23 +404,6 @@
 <span class="step">Answer</span> <span class="arrow">-------&gt;</span> <span class="component">LLM Response</span> <span class="detail">-&gt; answer with citations to source items</span>
 </div>
 
-<h3>Night Watch Autonomous Loop</h3>
-<div class="flow-diagram"><span class="step">Scheduler</span> <span class="arrow">-------&gt;</span> <span class="component">Coordinator</span> <span class="detail">(polls issue tracker on interval)</span>
-   <span class="arrow">|</span>
-   <span class="arrow">|--&gt;</span> <span class="component">Lane Scanner</span> <span class="detail">-&gt; finds issues matching lane filters</span>
-   <span class="arrow">|</span>
-   <span class="arrow">|--&gt;</span> <span class="component">Complexity Router</span> <span class="detail">-&gt; low/medium/high -&gt; model selection</span>
-   <span class="arrow">|</span>
-   <span class="arrow">|--&gt;</span> <span class="component">Agent Dispatcher</span> <span class="detail">-&gt; child_process.spawn() per issue</span>
-   <span class="arrow">|</span>
-   <span class="arrow">|--&gt;</span> <span class="component">Safety Gate</span> <span class="detail">-&gt; secret scan, PR limits, human approval</span>
-   <span class="arrow">|</span>
-   <span class="arrow">|--&gt;</span> <span class="component">Session Monitor</span> <span class="detail">-&gt; progress, timeouts, cost tracking</span>
-   <span class="arrow">|</span>
-   <span class="arrow">v</span>
-<span class="step">Completion</span> <span class="arrow">-------&gt;</span> <span class="component">Issue Transition</span> <span class="detail">-&gt; closes issue + webhook notification</span>
-</div>
-
 <h3>Multi-Agent Delegation</h3>
 <div class="flow-diagram"><span class="step">User Request</span> <span class="arrow">-------&gt;</span> <span class="component">Orchestrator</span> <span class="detail">(Opus 4.6 &mdash; analyzes, delegates)</span>
    <span class="arrow">|</span>
@@ -647,14 +625,6 @@
   <li class="build-step">
     <h4>Sub-Agents + Agent Launcher</h4>
     <p>Domain experts installed to <code>~/.claude/agents/</code>. <code>llm-collab agent claude</code> configures MCP, sets env, spawns via <code>child_process.spawn()</code>.</p>
-  </li>
-  <li class="build-step">
-    <h4>Night Watch</h4>
-    <p>Coordinator polls issue trackers, routes to specialized agents via lanes. Safety gates, session monitoring, cost tracking. Autonomous operation.</p>
-  </li>
-  <li class="build-step">
-    <h4>Day Watch</h4>
-    <p>Interactive TUI (ink or blessed). Thread-based workspace with @mention routing. Session history, cost tracking, thread persistence.</p>
   </li>
 </ol>
 

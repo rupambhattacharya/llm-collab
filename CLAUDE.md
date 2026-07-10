@@ -38,8 +38,6 @@ llm-collab mcp stdio             # Start MCP server (stdio)
 llm-collab mcp http --port 3456  # Start MCP server (HTTP+SSE)
 llm-collab relay 4000            # Start LLM relay proxy on port 4000
 llm-collab chat                  # Interactive AI chat
-llm-collab nw start              # Start Night Watch (autonomous)
-llm-collab dw                    # Start Day Watch (interactive TUI)
 
 # Integrations
 llm-collab setup                 # Interactive config wizard
@@ -112,11 +110,9 @@ llm-collab/
 │   │   ├── chat.ts                  # Interactive AI chat REPL
 │   │   ├── chronicle.ts             # Knowledge store commands
 │   │   ├── config-cmd.ts            # Config view/edit
-│   │   ├── dw.ts                    # Day Watch TUI
 │   │   ├── github.ts                # GitHub operations
 │   │   ├── linear.ts                # Linear operations
 │   │   ├── mcp.ts                   # MCP server start
-│   │   ├── nw.ts                    # Night Watch orchestrator
 │   │   ├── relay.ts                 # LLM relay proxy
 │   │   ├── setup.ts                 # Interactive config wizard
 │   │   └── skills.ts                # Skill management
@@ -124,9 +120,7 @@ llm-collab/
 │   ├── services/                    # Business logic (thick)
 │   │   ├── ai-service.ts            # LLM provider abstraction
 │   │   ├── chronicle-service.ts     # Knowledge persistence + graph
-│   │   ├── coordinator.ts           # Night Watch workflow engine
 │   │   ├── cost-tracker.ts          # Token usage & cost tracking
-│   │   ├── day-watch.ts             # Day Watch session manager
 │   │   ├── github-service.ts        # GitHub REST/GraphQL API
 │   │   ├── linear-service.ts        # Linear API
 │   │   ├── mcp-service.ts           # MCP tool registry & execution
@@ -442,51 +436,7 @@ program.parseAsync(process.argv).catch((err) => {
     - High -> Opus with extended thinking
     - Configurable thresholds
 
-### Phase 7: Night Watch (Autonomous Orchestration)
-
-**Goal:** Autonomous agent system that processes work items from issue trackers.
-
-26. **Coordinator**
-    - Markdown config files with YAML frontmatter (parsed via `gray-matter`)
-    - Lanes: named work streams, each routing to a "soul" (specialized agent)
-    - Souls: system prompt, tools[], model, permission mode, safety profile
-    - Polling: interval, source (GitHub Issues, Linear, Jira), max concurrent
-
-27. **Safety gates**
-    - Safety profiles: none, balanced, strict, paranoid
-    - PR gates: maxChangedFiles, deletionRatioThreshold
-    - Secret scanner on agent outputs
-    - Completion gates (require human verification at strict+)
-    - Audit trail of all actions
-
-28. **Session management**
-    - Track active sessions per lane
-    - Timeout handling
-    - Progress reporting
-    - Cost tracking per session
-
-29. **Night Watch CLI**
-    - `llm-collab nw start` — begin autonomous processing
-    - `llm-collab nw status` — show active sessions
-    - `llm-collab nw audit` — dump execution history
-    - `llm-collab nw stop` — graceful shutdown
-
-### Phase 8: Day Watch (Interactive Multi-Agent Chat)
-
-**Goal:** Interactive TUI for chatting with multiple AI agents.
-
-30. **TUI interface**
-    - Thread-based chat workspace (using `ink` or `blessed`)
-    - @mention routing: `@claude`, `@codex`, `@opencode`
-    - Session history sidebar
-    - Cost per session display
-
-31. **Thread management**
-    - Import Claude Code sessions from `~/.claude/projects/`
-    - Thread persistence across sessions
-    - Thread search and filtering
-
-### Phase 9: Skills System
+### Phase 7: Skills System
 
 **Goal:** Extend agent capabilities via installable markdown files.
 
@@ -556,7 +506,6 @@ program.parseAsync(process.argv).catch((err) => {
 41. **A2A client**
     - Connect to running agents
     - Send commands, stream results
-    - Used by Night Watch coordinator
 
 ### Phase 12: Error Handling & Resilience
 
@@ -644,14 +593,6 @@ program.parseAsync(process.argv).catch((err) => {
     "webhooks": [
       { "url": "https://hooks.slack.com/...", "events": ["session_complete", "budget_alert"] }
     ]
-  },
-  "night_watch": {
-    "safety_profile": "balanced",
-    "max_concurrent_sessions": 3,
-    "pr_gates": {
-      "max_changed_files": 20,
-      "deletion_ratio_threshold": 0.5
-    }
   }
 }
 ```
@@ -687,7 +628,7 @@ Installed to `~/.claude/agents/` via `llm-collab setup`:
 - **Constants:** UPPER_SNAKE_CASE
 - **Types/Interfaces:** PascalCase, no `I` prefix
 - **Config keys:** snake_case in JSON, camelCase in TypeScript
-- **CLI commands:** kebab-case (`night-watch`, `day-watch`)
+- **CLI commands:** kebab-case (`config-cmd`, `relay`)
 - **MCP tools:** snake_case with domain prefix (`github_get_issue`, `chronicle_search`)
 
 ## Environment Variables
@@ -708,8 +649,6 @@ Installed to `~/.claude/agents/` via `llm-collab setup`:
 |-------|-----------|
 | Credential storage | Config file with restricted permissions (600) |
 | Secret scanning | Regex patterns on agent output before display/commit |
-| PR safety gates | Max changed files, deletion ratio threshold |
-| Safety profiles | none -> balanced -> strict -> paranoid |
 | Relay auth | Optional client authentication with named keys |
 | MCP tool gating | Only register tools for configured integrations |
 | Audit trail | All tool executions logged with timestamps |
@@ -783,7 +722,7 @@ All items implemented and tested:
 | Typed errors | `src/utils/errors.ts` | Done — `LLMCollabError`, `ConfigError`, `AuthError`, `APIError`, `MCPError`, `ChronicleError` |
 | Logger | `src/utils/logger.ts` | Done — debug/info/warn/error to stderr, `passThrough` to stdout, chalk colors |
 | ConfigManager | `src/config/config-manager.ts` | Done — singleton, CLI > ENV > file > defaults, Zod validation, dot-notation get/set |
-| Config schemas | `src/config/schemas.ts` | Done — all sections: ai, integrations, chronicle, relay, hooks, night_watch |
+| Config schemas | `src/config/schemas.ts` | Done — all sections: ai, integrations, chronicle, relay, hooks |
 | Config command | `src/commands/config-cmd.ts` | Done — `config get/set/list/path`, auto-parse booleans/numbers |
 | Setup wizard | `src/commands/setup.ts` | Done — `@inquirer/prompts`, provider + GitHub + Linear setup, merges existing |
 | Audit logger | `src/hooks/audit-logger.ts` | Done — JSONL to `~/.llm-collab/audit/YYYY-MM-DD.jsonl`, session/command/config/tool/decision/error events |
@@ -796,19 +735,39 @@ All items implemented and tested:
 - `llm-collab audit tail` / `audit tail -e config_change --json`
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phase 2: LLM Integration — NOT STARTED (next)
+### Phase 2: LLM Integration — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| AI service | `src/services/ai-service.ts` | Done — Vercel AI SDK, Anthropic/OpenAI/Ollama/OpenRouter, streaming, generate |
+| Relay server | `src/services/relay-server.ts` | Done — Express.js proxy, key injection, optional client auth, SSE streaming |
+| Relay command | `src/commands/relay.ts` | Done — `relay [port]`, `--require-auth`, provider auto-detection |
+| Chat REPL | `src/commands/chat.ts` | Done — streaming chat, `/model`, `/cost`, `/system`, `/clear`, `/quit` |
+| LLM costs | `src/data/llm-costs.ts` | Done — pricing for Anthropic + OpenAI models, `getModelCost()`, `formatCost()` |
+| Cost tracker | `src/services/cost-tracker.ts` | Done — JSONL persistence, per-session/model/provider summaries |
+| Costs command | `src/commands/costs.ts` | Done — `costs --today`, `--week`, `--since`, `--json` |
+
+**Dependencies added:** `ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `express`, `@types/express`
+
+**Tested commands:**
+- `llm-collab chat --help` / `llm-collab relay --help`
+- `llm-collab costs --today`
+- `llm-collab --help` (shows all 6 commands)
+- Typecheck passes (`npx tsc --noEmit`)
+
+### Phase 3: MCP Server — NOT STARTED (next)
 
 **To implement:**
-1. `src/services/ai-service.ts` — Vercel AI SDK provider abstraction (Anthropic, OpenAI, Ollama, OpenRouter)
-2. `src/services/relay-server.ts` — Express.js HTTP proxy with key injection
-3. `src/commands/relay.ts` — `llm-collab relay <port>`
-4. `src/commands/chat.ts` — streaming terminal chat REPL
-5. `src/data/llm-costs.ts` — token pricing data for all models
-6. `src/services/cost-tracker.ts` — per-session/model/tool cost accumulation
+1. `src/mcp/` — MCP server with tool registry, context, transports
+2. `src/mcp/tools/` — file, system, chronicle tool handlers
+3. `src/commands/mcp.ts` — `llm-collab mcp stdio|http`
+4. Capability gating (progressive disclosure)
 
-**Dependencies to add:** `ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `express`, `@types/express`
+**Dependencies to add:** `@modelcontextprotocol/sdk`
 
-### Phases 3–14 — NOT STARTED
+### Phases 4–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -819,13 +778,22 @@ src/
 ├── index.ts                 # Entry point — Commander.js, audit session tracking
 ├── commands/
 │   ├── audit.ts             # Audit log viewer (show/tail/dates)
+│   ├── chat.ts              # Interactive AI chat REPL with streaming
 │   ├── config-cmd.ts        # Config get/set/list/path with audit logging
+│   ├── costs.ts             # Token usage and cost viewer
+│   ├── relay.ts             # LLM relay proxy command
 │   └── setup.ts             # Interactive wizard with audit logging
 ├── config/
 │   ├── config-manager.ts    # ConfigManager singleton
 │   └── schemas.ts           # Zod schemas for all config
+├── data/
+│   └── llm-costs.ts         # Model pricing data
 ├── hooks/
 │   └── audit-logger.ts      # JSONL audit logger singleton
+├── services/
+│   ├── ai-service.ts        # Multi-provider LLM abstraction (Vercel AI SDK)
+│   ├── cost-tracker.ts      # Token/cost tracking with JSONL persistence
+│   └── relay-server.ts      # Express.js HTTP proxy with key injection
 └── utils/
     ├── errors.ts            # Typed error classes
     └── logger.ts            # Structured logger
@@ -844,13 +812,13 @@ pnpm install
 pnpm typecheck              # Should pass clean
 npx tsx src/index.ts --help  # Should show all commands
 
-# Start Phase 2
-# 1. pnpm add ai @ai-sdk/anthropic @ai-sdk/openai express @types/express
-# 2. Create src/services/ai-service.ts
-# 3. Create src/commands/chat.ts and src/commands/relay.ts
-# 4. Wire into src/index.ts
-# 5. Add audit logging to new commands
-# 6. Test: llm-collab chat, llm-collab relay 4000
+# Start Phase 3 (MCP Server)
+# 1. pnpm add @modelcontextprotocol/sdk
+# 2. Create src/mcp/ directory with context.ts, transports.ts
+# 3. Create src/mcp/tools/ with file-tools.ts, system-tools.ts
+# 4. Create src/commands/mcp.ts
+# 5. Wire into src/index.ts
+# 6. Test: llm-collab mcp stdio, llm-collab mcp http --port 3456
 ```
 
 ## Audit Log Format

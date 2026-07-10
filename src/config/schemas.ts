@@ -94,26 +94,12 @@ const hooksConfigSchema = z.object({
   webhooks: z.array(webhookSchema).default([]),
 });
 
-const prGatesSchema = z.object({
-  max_changed_files: z.number().int().min(1).default(20),
-  deletion_ratio_threshold: z.number().min(0).max(1).default(0.5),
-});
-
-const nightWatchConfigSchema = z.object({
-  safety_profile: z
-    .enum(["none", "balanced", "strict", "paranoid"])
-    .default("balanced"),
-  max_concurrent_sessions: z.number().int().min(1).default(3),
-  pr_gates: prGatesSchema.default({}),
-});
-
 export const configSchema = z.object({
   ai: aiConfigSchema.default({}),
   integrations: integrationsConfigSchema.default({}),
   chronicle: chronicleConfigSchema.default({}),
   relay: relayConfigSchema.default({}),
   hooks: hooksConfigSchema.default({}),
-  night_watch: nightWatchConfigSchema.default({}),
 });
 
 export type Config = z.infer<typeof configSchema>;

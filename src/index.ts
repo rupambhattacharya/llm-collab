@@ -5,6 +5,9 @@ import chalk from "chalk";
 import { configCommand } from "./commands/config-cmd.js";
 import { setupCommand } from "./commands/setup.js";
 import { auditCommand } from "./commands/audit.js";
+import { chatCommand } from "./commands/chat.js";
+import { relayCommand } from "./commands/relay.js";
+import { costsCommand } from "./commands/costs.js";
 import { LLMCollabError } from "./utils/errors.js";
 import { logger } from "./utils/logger.js";
 import { audit } from "./hooks/audit-logger.js";
@@ -31,6 +34,9 @@ audit.sessionStart({ argv: process.argv.slice(2) });
 program.addCommand(configCommand);
 program.addCommand(setupCommand);
 program.addCommand(auditCommand);
+program.addCommand(chatCommand);
+program.addCommand(relayCommand);
+program.addCommand(costsCommand);
 
 program.parseAsync(process.argv).then(() => {
   audit.sessionEnd(Date.now() - sessionStart);

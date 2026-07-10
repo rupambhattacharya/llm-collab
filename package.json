@@ -31,14 +31,19 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.11",
+    "@ai-sdk/openai": "^4.0.10",
     "@inquirer/prompts": "^8.5.2",
+    "ai": "^7.0.19",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
+    "express": "^5.2.1",
     "inquirer": "^12.6.0",
     "ora": "^8.2.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.15.0",
     "tsup": "^8.5.0",
     "tsx": "^4.19.4",
