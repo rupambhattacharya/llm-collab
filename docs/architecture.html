@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>llm-collab — Architecture Overview</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --red: #f85149;
+    --pink: #f778ba;
+    --cyan: #39d353;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.4rem; margin: 2rem 0 1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; color: var(--purple); }
+  p, li { color: var(--text-muted); }
+  code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: var(--orange); }
+  .container { max-width: 1400px; margin: 0 auto; }
+  .subtitle { color: var(--text-muted); margin-bottom: 0.3rem; }
+  .version-note { color: var(--text-muted); font-size: 0.8rem; margin-bottom: 2rem; }
+  .tech-badge { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; color: var(--cyan); margin-right: 0.5rem; margin-bottom: 0.5rem; }
+
+  .diagram { display: flex; flex-direction: column; gap: 1.5rem; margin: 2rem 0; }
+  .layer { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; position: relative; }
+  .layer-label { position: absolute; top: -10px; left: 20px; background: var(--bg); padding: 0 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .layer-label.entry { color: var(--green); }
+  .layer-label.commands { color: var(--accent); }
+  .layer-label.services { color: var(--orange); }
+  .layer-label.config { color: var(--purple); }
+  .layer-label.mcp { color: var(--pink); }
+  .layer-label.data { color: var(--cyan); }
+  .layer-label.knowledge { color: var(--green); }
+  .layer-label.hooks { color: var(--red); }
+  .layer-label.agents { color: var(--orange); }
+
+  .boxes { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.85rem; cursor: default; transition: border-color 0.2s, transform 0.2s; }
+  .box:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .box .name { font-weight: 600; color: var(--text); }
+  .box .desc { color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
+
+  .flow-arrow { text-align: center; color: var(--text-muted); font-size: 1.5rem; margin: -0.5rem 0; }
+
+  .flow-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.8rem; overflow-x: auto; white-space: pre; line-height: 1.8; }
+  .flow-diagram .step { color: var(--accent); }
+  .flow-diagram .arrow { color: var(--text-muted); }
+  .flow-diagram .component { color: var(--green); }
+  .flow-diagram .detail { color: var(--orange); }
+
+  .build-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .build-step { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; counter-increment: step; }
+  .build-step::before { content: counter(step); display: inline-block; width: 24px; height: 24px; background: var(--accent); color: var(--bg); border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .build-step h4 { color: var(--text); margin-bottom: 0.3rem; font-size: 0.95rem; }
+  .build-step p { font-size: 0.85rem; }
+
+  .dep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+  .dep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .dep-card .category { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.3rem; }
+  .dep-card .pkg { color: var(--text); font-weight: 500; font-size: 0.9rem; }
+  .dep-card .role { color: var(--text-muted); font-size: 0.8rem; }
+
+  .tabs { display: flex; gap: 0; margin: 1.5rem 0 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .tab { padding: 0.6rem 1.2rem; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; font-size: 0.9rem; transition: color 0.2s, border-color 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; padding: 1.5rem 0; }
+  .tab-content.active { display: block; }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { padding: 0.6rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
+
+  .connection-line { border-left: 2px dashed var(--border); margin-left: 2rem; padding-left: 1rem; }
+
+  ol.build-steps { counter-reset: step; list-style: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>llm-collab &mdash; Architecture</h1>
+<p class="subtitle">Open-source Node.js CLI for AI-powered multi-agent collaboration, MCP integration, and autonomous workflows.</p>
+<p class="version-note">Architecture v1.0 &mdash; Last updated 2026-07-10</p>
+<div style="margin-bottom: 1.5rem;">
+  <span class="tech-badge">Node.js 24+</span>
+  <span class="tech-badge">TypeScript 5.x</span>
+  <span class="tech-badge">Commander.js</span>
+  <span class="tech-badge">Inquirer.js</span>
+  <span class="tech-badge">Zod</span>
+  <span class="tech-badge">Vercel AI SDK</span>
+  <span class="tech-badge">MCP SDK</span>
+  <span class="tech-badge">better-sqlite3</span>
+  <span class="tech-badge">Vitest</span>
+  <span class="tech-badge">tsup</span>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('overview')">Overview</div>
+  <div class="tab" onclick="showTab('layers')">Layer Detail</div>
+  <div class="tab" onclick="showTab('dataflow')">Data Flow</div>
+  <div class="tab" onclick="showTab('agents')">Agent System</div>
+  <div class="tab" onclick="showTab('chronicle')">Chronicle</div>
+  <div class="tab" onclick="showTab('build')">Build From Scratch</div>
+</div>
+
+<!-- TAB: Overview -->
+<div class="tab-content active" id="tab-overview">
+<h2>System Architecture</h2>
+
+<div class="diagram">
+  <div class="layer">
+    <span class="layer-label entry">Entry Point</span>
+    <div class="boxes">
+      <div class="box"><span class="name">src/index.ts</span><div class="desc">Commander.js CLI router &mdash; registers 15+ commands, global error handling</div></div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#9660;</div>
+
+  <div class="layer">
+    <span class="layer-label commands">Commands Layer</span>
+    <div class="boxes">
+      <div class="box"><span class="name">agent</span><div class="desc">Claude/Codex/OpenCode launcher</div></div>
+      <div class="box"><span class="name">mcp</span><div class="desc">MCP server (stdio/HTTP/SSE)</div></div>
+      <div class="box"><span class="name">dw</span><div class="desc">Day Watch TUI</div></div>
+      <div class="box"><span class="name">nw</span><div class="desc">Night Watch orchestrator</div></div>
+      <div class="box"><span class="name">chronicle</span><div class="desc">Knowledge store</div></div>
+      <div class="box"><span class="name">github</span><div class="desc">GitHub operations</div></div>
+      <div class="box"><span class="name">linear</span><div class="desc">Linear operations</div></div>
+      <div class="box"><span class="name">setup</span><div class="desc">Interactive config wizard</div></div>
+      <div class="box"><span class="name">relay</span><div class="desc">LLM API proxy</div></div>
+      <div class="box"><span class="name">skills</span><div class="desc">Skill management</div></div>
+      <div class="box"><span class="name">chat</span><div class="desc">AI chat REPL</div></div>
+      <div class="box"><span class="name">costs</span><div class="desc">Usage &amp; spend tracking</div></div>
+      <div class="box"><span class="name">audit</span><div class="desc">Action trail viewer</div></div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#9660;</div>
+
+  <div class="layer">
+    <span class="layer-label services">Services Layer</span>
+    <div class="boxes">
+      <div class="box"><span class="name">ai-service</span><div class="desc">LLM provider abstraction (Anthropic, OpenAI, Ollama, OpenRouter)</div></div>
+      <div class="box"><span class="name">mcp-service</span><div class="desc">50+ tool registry &amp; execution</div></div>
+      <div class="box"><span class="name">chronicle-service</span><div class="desc">Knowledge persistence, graph, search</div></div>
+      <div class="box"><span class="name">github-service</span><div class="desc">GitHub REST/GraphQL via Octokit</div></div>
+      <div class="box"><span class="name">linear-service</span><div class="desc">Linear GraphQL via @linear/sdk</div></div>
+      <div class="box"><span class="name">coordinator</span><div class="desc">Night Watch workflow engine</div></div>
+      <div class="box"><span class="name">cost-tracker</span><div class="desc">Token usage &amp; cost accounting</div></div>
+      <div class="box"><span class="name">relay-server</span><div class="desc">Express.js proxy with key injection</div></div>
+      <div class="box"><span class="name">day-watch</span><div class="desc">Session discovery &amp; management</div></div>
+      <div class="box"><span class="name">thread-manager</span><div class="desc">Thread CRUD, @mention routing</div></div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#9660;</div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div class="layer">
+      <span class="layer-label config">Configuration</span>
+      <div class="boxes">
+        <div class="box"><span class="name">ConfigManager</span><div class="desc">Singleton: CLI &gt; ENV &gt; file &gt; defaults</div></div>
+        <div class="box"><span class="name">sub-agents.ts</span><div class="desc">Domain agent definitions</div></div>
+        <div class="box"><span class="name">Zod schemas</span><div class="desc">Runtime validation for all config</div></div>
+        <div class="box"><span class="name">setup/</span><div class="desc">Inquirer.js wizard steps</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <span class="layer-label mcp">MCP Server</span>
+      <div class="boxes">
+        <div class="box"><span class="name">Tool Registry</span><div class="desc">50+ tools across 8 domains</div></div>
+        <div class="box"><span class="name">Transports</span><div class="desc">stdio, HTTP+SSE (Express), WebSocket (ws)</div></div>
+        <div class="box"><span class="name">Capability Gating</span><div class="desc">Only register configured integrations</div></div>
+        <div class="box"><span class="name">Context</span><div class="desc">Authenticated service injection</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#9660;</div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
+    <div class="layer">
+      <span class="layer-label knowledge">Chronicle</span>
+      <div class="boxes">
+        <div class="box"><span class="name">SQLite Store</span><div class="desc">better-sqlite3: items, entities, relations</div></div>
+        <div class="box"><span class="name">Embeddings</span><div class="desc">Vector search (provider-backed)</div></div>
+        <div class="box"><span class="name">Knowledge Graph</span><div class="desc">Entity extraction &amp; traversal</div></div>
+        <div class="box"><span class="name">Timeline</span><div class="desc">Decision log &amp; snapshots</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <span class="layer-label hooks">Hooks &amp; Auditing</span>
+      <div class="boxes">
+        <div class="box"><span class="name">HookManager</span><div class="desc">EventEmitter lifecycle dispatch</div></div>
+        <div class="box"><span class="name">Audit Trail</span><div class="desc">JSONL logs per day</div></div>
+        <div class="box"><span class="name">Cost Tracker</span><div class="desc">Per-session spend</div></div>
+        <div class="box"><span class="name">Secret Scanner</span><div class="desc">Credential detection</div></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <span class="layer-label data">Data &amp; Assets</span>
+      <div class="boxes">
+        <div class="box"><span class="name">bundled-skills.ts</span><div class="desc">Embedded skill files</div></div>
+        <div class="box"><span class="name">llm-costs.ts</span><div class="desc">Model pricing data</div></div>
+        <div class="box"><span class="name">templates/</span><div class="desc">Agent &amp; prompt templates</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>External Systems</h3>
+<div class="boxes" style="margin-top: 0.5rem;">
+  <div class="box" style="border-color: var(--green);"><span class="name">Anthropic API</span><div class="desc">Claude models</div></div>
+  <div class="box" style="border-color: var(--green);"><span class="name">OpenAI API</span><div class="desc">GPT models</div></div>
+  <div class="box" style="border-color: var(--green);"><span class="name">Ollama</span><div class="desc">Local models</div></div>
+  <div class="box" style="border-color: var(--green);"><span class="name">OpenRouter</span><div class="desc">Multi-provider routing</div></div>
+  <div class="box" style="border-color: var(--orange);"><span class="name">GitHub</span><div class="desc">Issues, PRs, CI</div></div>
+  <div class="box" style="border-color: var(--orange);"><span class="name">Linear</span><div class="desc">Project tracking</div></div>
+  <div class="box" style="border-color: var(--orange);"><span class="name">GitLab</span><div class="desc">Source control</div></div>
+  <div class="box" style="border-color: var(--orange);"><span class="name">Jira</span><div class="desc">Issue tracking</div></div>
+</div>
+
+<h3>Local File Layout</h3>
+<div class="flow-diagram"><span class="component">~/.llm-collab/</span>
+<span class="arrow">|--</span> <span class="detail">config.json</span>          <span class="arrow">-&gt;</span> <span class="component">Main configuration (Zod-validated)</span>
+<span class="arrow">|--</span> <span class="detail">keys/keys.json</span>      <span class="arrow">-&gt;</span> <span class="component">Relay client auth keys</span>
+<span class="arrow">|--</span> <span class="detail">chronicle/</span>           <span class="arrow">-&gt;</span> <span class="component">Knowledge stores (better-sqlite3 per project)</span>
+<span class="arrow">|   +--</span> <span class="detail">&lt;project-hash&gt;/</span>  <span class="arrow">-&gt;</span> <span class="component">chronicle.db</span>
+<span class="arrow">|--</span> <span class="detail">audit/</span>               <span class="arrow">-&gt;</span> <span class="component">Audit logs (JSONL per day)</span>
+<span class="arrow">|--</span> <span class="detail">costs/</span>               <span class="arrow">-&gt;</span> <span class="component">Cost tracking (sessions.jsonl)</span>
+<span class="arrow">+--</span> <span class="detail">cache/</span>               <span class="arrow">-&gt;</span> <span class="component">Response cache (TTL-based)</span>
+
+<span class="component">~/.claude/</span>
+<span class="arrow">|--</span> <span class="detail">agents/</span>              <span class="arrow">-&gt;</span> <span class="component">Sub-agent definitions (github-expert, linear-expert, ...)</span>
+<span class="arrow">|--</span> <span class="detail">skills/</span>              <span class="arrow">-&gt;</span> <span class="component">Installed skill markdown files</span>
+<span class="arrow">+--</span> <span class="detail">settings.json</span>        <span class="arrow">-&gt;</span> <span class="component">Claude Code project settings (hooks, permissions)</span>
+</div>
+</div>
+
+<!-- TAB: Layers -->
+<div class="tab-content" id="tab-layers">
+<h2>Layer Deep Dive</h2>
+
+<h3>1. Entry Point &mdash; <code>src/index.ts</code></h3>
+<p>Single file that wires everything together using Commander.js.</p>
+<table>
+  <tr><th>Responsibility</th><th>How</th></tr>
+  <tr><td>CLI parsing</td><td><code>new Command().name('llm-collab').version(...)</code></td></tr>
+  <tr><td>Command registration</td><td>Each command module exports a <code>Command</code> instance, added via <code>.addCommand()</code></td></tr>
+  <tr><td>Global options</td><td><code>--debug</code>, <code>--config</code>, <code>--version</code></td></tr>
+  <tr><td>Error boundary</td><td>Top-level catch with typed errors and chalk-colored output</td></tr>
+</table>
+
+<h3>2. Commands &mdash; <code>src/commands/</code></h3>
+<p>Thin orchestration layer. Each command file:</p>
+<ul style="margin: 0.5rem 0 0 1.5rem;">
+  <li>Exports a Commander <code>Command</code> with options/arguments</li>
+  <li>Loads config via <code>ConfigManager</code></li>
+  <li>Instantiates required services</li>
+  <li>Calls service methods and formats output</li>
+  <li>Handles errors with typed error classes + <code>process.exit(1)</code></li>
+</ul>
+
+<h3>3. Services &mdash; <code>src/services/</code></h3>
+<p>Thick business logic. Services:</p>
+<ul style="margin: 0.5rem 0 0 1.5rem;">
+  <li>Manage authentication (API keys, OAuth tokens, refresh logic)</li>
+  <li>Wrap external REST/GraphQL APIs with typed responses</li>
+  <li>Cache responses with TTL-based expiry</li>
+  <li>Throw typed errors &mdash; commands catch and format</li>
+  <li>Are instantiated per-request (no global singletons except ConfigManager)</li>
+  <li>Retry with exponential backoff on transient failures (p-retry)</li>
+</ul>
+
+<h3>4. MCP Server &mdash; <code>src/mcp/</code></h3>
+<table>
+  <tr><th>Component</th><th>File</th><th>Role</th></tr>
+  <tr><td>Server startup</td><td><code>src/commands/mcp.ts</code></td><td>Transport selection, tool registration</td></tr>
+  <tr><td>Tool registry</td><td><code>src/services/mcp-service.ts</code></td><td>Maps tool names to handler functions</td></tr>
+  <tr><td>Tool context</td><td><code>src/mcp/context.ts</code></td><td>Injects authenticated service instances</td></tr>
+  <tr><td>Capability gating</td><td><code>src/mcp/context.ts</code></td><td>Only registers tools for configured integrations</td></tr>
+  <tr><td>Tool handlers</td><td><code>src/mcp/tools/*.ts</code></td><td>Domain-specific tool implementations</td></tr>
+</table>
+
+<h3>5. Chronicle &mdash; <code>src/chronicle/</code></h3>
+<table>
+  <tr><th>Component</th><th>File</th><th>Role</th></tr>
+  <tr><td>SQLite store</td><td><code>store.ts</code></td><td>Items, entities, relations via better-sqlite3</td></tr>
+  <tr><td>Embeddings</td><td><code>embeddings.ts</code></td><td>Vector generation via LLM provider or Ollama</td></tr>
+  <tr><td>Knowledge graph</td><td><code>graph.ts</code></td><td>Entity extraction, relation mapping, traversal</td></tr>
+  <tr><td>Timeline</td><td><code>timeline.ts</code></td><td>Temporal snapshots, decision log</td></tr>
+  <tr><td>NL query</td><td><code>query.ts</code></td><td>RAG-based question answering with citations</td></tr>
+</table>
+
+<h3>6. Hooks &amp; Auditing &mdash; <code>src/hooks/</code></h3>
+<table>
+  <tr><th>Hook</th><th>Fires On</th><th>Data</th></tr>
+  <tr><td>onToolCall</td><td>Every MCP tool execution</td><td>Tool name, input, result, duration</td></tr>
+  <tr><td>onInference</td><td>Every LLM API call</td><td>Model, tokens in/out, cost, latency</td></tr>
+  <tr><td>onSessionStart/End</td><td>Agent session lifecycle</td><td>Agent type, session ID, total cost</td></tr>
+  <tr><td>onError</td><td>Unhandled errors</td><td>Error type, context, stack</td></tr>
+  <tr><td>onSecretDetected</td><td>Credential pattern match</td><td>Pattern type, location</td></tr>
+</table>
+
+<h3>7. Agent System</h3>
+<table>
+  <tr><th>Pattern</th><th>Location</th><th>Purpose</th></tr>
+  <tr><td>Orchestrator agents</td><td><code>.claude/agents/</code></td><td>Multi-agent delegation (Orchestrator &rarr; Planner &rarr; Coder/Designer)</td></tr>
+  <tr><td>Sub-agents</td><td><code>src/config/sub-agents.ts</code></td><td>Domain experts with scoped MCP tools</td></tr>
+  <tr><td>A2A Protocol</td><td><code>src/agent/a2a/</code></td><td>JSON-RPC 2.0 agent-to-agent communication over WebSocket</td></tr>
+  <tr><td>Agent bridges</td><td><code>src/agent/bridges/</code></td><td>Adapters for Claude Code, Codex, generic agents via child_process</td></tr>
+</table>
+
+<h3>8. Configuration &mdash; <code>src/config/</code></h3>
+<p>Hierarchical config: CLI args &gt; <code>LLM_COLLAB_*</code> env vars &gt; <code>~/.llm-collab/config.json</code> &gt; defaults. All sections validated with Zod at load time.</p>
+
+<h3>9. Error Handling &amp; Resilience</h3>
+<table>
+  <tr><th>Strategy</th><th>Where</th></tr>
+  <tr><td>Typed errors</td><td><code>ConfigError</code>, <code>AuthError</code>, <code>APIError</code>, <code>MCPError</code>, <code>ChronicleError</code> &mdash; all extend <code>LLMCollabError</code></td></tr>
+  <tr><td>Exponential backoff</td><td>Service layer via p-retry</td></tr>
+  <tr><td>Circuit breaker</td><td>Service layer for persistent failures</td></tr>
+  <tr><td>Graceful degradation</td><td>MCP server &mdash; unconfigured integrations absent, not broken</td></tr>
+  <tr><td>Payload cleaning</td><td>Service layer &mdash; truncate large responses for LLM consumption</td></tr>
+</table>
+</div>
+
+<!-- TAB: Data Flow -->
+<div class="tab-content" id="tab-dataflow">
+<h2>Request Data Flow</h2>
+
+<h3>CLI Command Execution</h3>
+<div class="flow-diagram"><span class="step">User</span> <span class="arrow">-------&gt;</span> <span class="component">src/index.ts</span> <span class="detail">(Commander.js parses argv)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="component">Command Handler</span> <span class="detail">(e.g. src/commands/github.ts)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">ConfigManager.load()</span> <span class="detail">-&gt; reads config.json + ENV</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Service instantiation</span> <span class="detail">-&gt; e.g. new GitHubService(config)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Service method call</span> <span class="detail">-&gt; Octokit REST/GraphQL with auth</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">HookManager.emit('onToolCall')</span> <span class="detail">-&gt; audit + cost tracking</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="step">Output</span> <span class="arrow">-------&gt;</span> <span class="component">logger.passThrough()</span> <span class="detail">-&gt; chalk-formatted result to stdout</span>
+</div>
+
+<h3>MCP Tool Execution (AI Agent &rarr; Tool)</h3>
+<div class="flow-diagram"><span class="step">AI Agent</span> <span class="arrow">-------&gt;</span> <span class="component">MCP Transport</span> <span class="detail">(stdio | Express HTTP+SSE)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="component">MCP Server</span> <span class="detail">(protocol handler)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Capability Check</span> <span class="detail">-&gt; is this tool registered? (gated by config)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Tool Lookup</span> <span class="detail">-&gt; MCPService.registry[toolName]</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">MCPToolContext</span> <span class="detail">-&gt; injects authenticated service instances</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Tool Handler</span> <span class="detail">-&gt; calls service method, never throws</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">HookManager</span> <span class="detail">-&gt; audit log + cost tracking + secret scan</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="step">Response</span> <span class="arrow">-------&gt;</span> <span class="component">MCPToolResult</span> <span class="detail">-&gt; { success, data } | { success: false, error }</span>
+</div>
+
+<h3>Chronicle Knowledge Flow</h3>
+<div class="flow-diagram"><span class="step">Input</span> <span class="arrow">-------&gt;</span> <span class="component">Chronicle Service</span> <span class="detail">(text, code, decisions)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Entity Extraction</span> <span class="detail">-&gt; LLM identifies files, functions, concepts</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Embedding Generation</span> <span class="detail">-&gt; vector via Anthropic Voyage / OpenAI / Ollama</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">better-sqlite3 Store</span> <span class="detail">-&gt; items + entities + relations + timeline</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="step">Query</span> <span class="arrow">-------&gt;</span> <span class="component">Hybrid Search</span> <span class="detail">(FTS5 keyword + vector cosine similarity)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Graph Traversal</span> <span class="detail">-&gt; follow entity relationships</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">RAG Assembly</span> <span class="detail">-&gt; context from search + graph</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="step">Answer</span> <span class="arrow">-------&gt;</span> <span class="component">LLM Response</span> <span class="detail">-&gt; answer with citations to source items</span>
+</div>
+
+<h3>Night Watch Autonomous Loop</h3>
+<div class="flow-diagram"><span class="step">Scheduler</span> <span class="arrow">-------&gt;</span> <span class="component">Coordinator</span> <span class="detail">(polls issue tracker on interval)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Lane Scanner</span> <span class="detail">-&gt; finds issues matching lane filters</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Complexity Router</span> <span class="detail">-&gt; low/medium/high -&gt; model selection</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Agent Dispatcher</span> <span class="detail">-&gt; child_process.spawn() per issue</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Safety Gate</span> <span class="detail">-&gt; secret scan, PR limits, human approval</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Session Monitor</span> <span class="detail">-&gt; progress, timeouts, cost tracking</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="step">Completion</span> <span class="arrow">-------&gt;</span> <span class="component">Issue Transition</span> <span class="detail">-&gt; closes issue + webhook notification</span>
+</div>
+
+<h3>Multi-Agent Delegation</h3>
+<div class="flow-diagram"><span class="step">User Request</span> <span class="arrow">-------&gt;</span> <span class="component">Orchestrator</span> <span class="detail">(Opus 4.6 &mdash; analyzes, delegates)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Planner</span> <span class="detail">(Opus 4.6) -&gt; researches codebase, creates plan</span>
+   <span class="arrow">|      |</span>
+   <span class="arrow">|      v</span>
+   <span class="arrow">|</span>   <span class="detail">Implementation Plan (files, changes, edge cases, tests)</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Coder</span> <span class="detail">(Sonnet 5) -&gt; implements plan, uses context7 MCP</span>
+   <span class="arrow">|</span>
+   <span class="arrow">|--&gt;</span> <span class="component">Designer</span> <span class="detail">(Sonnet 5) -&gt; UI/UX, terminal interfaces</span>
+   <span class="arrow">|</span>
+   <span class="arrow">v</span>
+<span class="step">Orchestrator</span> <span class="arrow">-------&gt;</span> <span class="component">Validates</span> <span class="detail">-&gt; integrates results, verifies, reports</span>
+</div>
+</div>
+
+<!-- TAB: Agent System -->
+<div class="tab-content" id="tab-agents">
+<h2>Agent System</h2>
+
+<h3>Orchestrator Agents (.claude/agents/)</h3>
+<table>
+  <tr><th>Agent</th><th>Model</th><th>Role</th><th>Delegates To</th></tr>
+  <tr><td>Orchestrator</td><td>Opus 4.6</td><td>Analyze requests, gather context, coordinate</td><td>Planner, Coder, Designer</td></tr>
+  <tr><td>Planner</td><td>Opus 4.6</td><td>Research codebase, create implementation plans</td><td>&mdash;</td></tr>
+  <tr><td>Coder</td><td>Sonnet 5</td><td>Write code, use context7 MCP for docs</td><td>&mdash;</td></tr>
+  <tr><td>Designer</td><td>Sonnet 5</td><td>UI/UX, components, styling, accessibility</td><td>&mdash;</td></tr>
+</table>
+
+<h3>Domain Sub-Agents (~/.claude/agents/)</h3>
+<table>
+  <tr><th>Agent</th><th>Triggers</th><th>Tools</th><th>Key Rules</th></tr>
+  <tr><td>github-expert</td><td>Issue refs, PR URLs, CI questions</td><td>github_*</td><td>Always fetch before write, link issues</td></tr>
+  <tr><td>linear-expert</td><td>Issue keys, project refs</td><td>linear_*</td><td>Zero fabrication, verify state first</td></tr>
+  <tr><td>chronicle-expert</td><td>Knowledge queries, "what do we know"</td><td>chronicle_*</td><td>Cite sources, never fabricate knowledge</td></tr>
+</table>
+
+<h3>Complexity Routing</h3>
+<table>
+  <tr><th>Complexity</th><th>Default Model</th><th>Use When</th></tr>
+  <tr><td>Low</td><td>Haiku 4.5</td><td>Simple lookups, formatting, translations</td></tr>
+  <tr><td>Medium</td><td>Sonnet 5</td><td>Standard implementation, bug fixes, refactors</td></tr>
+  <tr><td>High</td><td>Opus 4.8 (with thinking)</td><td>Architecture, complex debugging, security review</td></tr>
+</table>
+
+<h3>Safety Profiles</h3>
+<table>
+  <tr><th>Profile</th><th>PR Gates</th><th>Secret Scan</th><th>Human Approval</th><th>Audit</th></tr>
+  <tr><td>none</td><td>Off</td><td>Off</td><td>Never</td><td>Optional</td></tr>
+  <tr><td>balanced</td><td>Max 20 files, 50% deletion ratio</td><td>Warn</td><td>Merges only</td><td>Always</td></tr>
+  <tr><td>strict</td><td>Max 10 files, 30% deletion ratio</td><td>Block</td><td>Commits + merges</td><td>Always</td></tr>
+  <tr><td>paranoid</td><td>Max 5 files, 10% deletion ratio</td><td>Block</td><td>Every action</td><td>Always + webhook</td></tr>
+</table>
+
+<h3>A2A Protocol</h3>
+<table>
+  <tr><th>Method</th><th>Purpose</th></tr>
+  <tr><td><code>shell.execute</code></td><td>Run shell commands on remote agent</td></tr>
+  <tr><td><code>file.read</code> / <code>file.write</code></td><td>File operations across agents</td></tr>
+  <tr><td><code>agent.delegate</code></td><td>Delegate a task to another agent</td></tr>
+  <tr><td><code>agent.status</code></td><td>Check agent session status</td></tr>
+</table>
+</div>
+
+<!-- TAB: Chronicle -->
+<div class="tab-content" id="tab-chronicle">
+<h2>Chronicle &mdash; Knowledge System</h2>
+
+<p>Chronicle is the persistent knowledge layer that survives across sessions, agents, and tools. It combines a better-sqlite3 store, vector embeddings, a knowledge graph, and temporal versioning.</p>
+
+<h3>Schema</h3>
+<table>
+  <tr><th>Table</th><th>Purpose</th><th>Key Columns</th></tr>
+  <tr><td><code>items</code></td><td>Raw knowledge entries</td><td>id, content, metadata (JSON), embedding (BLOB), created_at</td></tr>
+  <tr><td><code>entities</code></td><td>Extracted concepts</td><td>id, name, type (file/function/decision/concept/person), properties (JSON)</td></tr>
+  <tr><td><code>relations</code></td><td>Entity connections</td><td>from_id, to_id, type (depends_on/authored_by/decided_in/blocks/implements)</td></tr>
+  <tr><td><code>timeline</code></td><td>Temporal snapshots</td><td>id, item_id, snapshot (JSON), timestamp</td></tr>
+</table>
+
+<h3>Entity Types</h3>
+<table>
+  <tr><th>Type</th><th>Examples</th><th>Auto-Extracted From</th></tr>
+  <tr><td>file</td><td><code>src/services/auth.ts</code></td><td>Code references, imports</td></tr>
+  <tr><td>function</td><td><code>validateJWT</code></td><td>Function definitions, calls</td></tr>
+  <tr><td>decision</td><td>"Use JWT over sessions"</td><td>Conversations, ADRs</td></tr>
+  <tr><td>concept</td><td>"authentication", "rate limiting"</td><td>Topic extraction</td></tr>
+  <tr><td>person</td><td>"@alice", "@bob"</td><td>Mentions, authorship</td></tr>
+  <tr><td>issue</td><td>"GH-123", "LIN-456"</td><td>Issue references</td></tr>
+</table>
+
+<h3>Relation Types</h3>
+<table>
+  <tr><th>Relation</th><th>Example</th></tr>
+  <tr><td><code>depends_on</code></td><td>auth.ts depends_on jwt-utils.ts</td></tr>
+  <tr><td><code>implements</code></td><td>validateJWT implements "JWT validation decision"</td></tr>
+  <tr><td><code>blocks</code></td><td>GH-123 blocks GH-456</td></tr>
+  <tr><td><code>authored_by</code></td><td>"JWT decision" authored_by @alice</td></tr>
+  <tr><td><code>decided_in</code></td><td>"Rate limiting approach" decided_in session-2024-03</td></tr>
+</table>
+
+<h3>Query Modes</h3>
+<div class="flow-diagram"><span class="step">1. Keyword Search</span>
+   <span class="detail">SQLite FTS5 full-text search over item content and entity names</span>
+   <span class="detail">Example: chronicle search "JWT rotation"</span>
+
+<span class="step">2. Semantic Search</span>
+   <span class="detail">Cosine similarity between query embedding and stored embeddings</span>
+   <span class="detail">Example: chronicle search "how does authentication work" --semantic</span>
+
+<span class="step">3. Graph Traversal</span>
+   <span class="detail">Follow entity relationships to find connected knowledge</span>
+   <span class="detail">Example: chronicle graph --entity "auth_middleware" --depth 2</span>
+
+<span class="step">4. NL Question Answering</span>
+   <span class="detail">RAG: search -&gt; context assembly -&gt; LLM answer with citations</span>
+   <span class="detail">Example: chronicle ask "why did we choose JWT over sessions?"</span>
+
+<span class="step">5. Timeline Query</span>
+   <span class="detail">What was known at a specific point in time</span>
+   <span class="detail">Example: chronicle timeline --since 2024-01-01 --entity "auth"</span>
+</div>
+
+<h3>MCP Tools</h3>
+<table>
+  <tr><th>Tool</th><th>Purpose</th></tr>
+  <tr><td><code>chronicle_search</code></td><td>Keyword + semantic search over knowledge items</td></tr>
+  <tr><td><code>chronicle_read</code></td><td>Read a specific knowledge item by ID</td></tr>
+  <tr><td><code>chronicle_write</code></td><td>Add a knowledge item (triggers entity extraction)</td></tr>
+  <tr><td><code>chronicle_ask</code></td><td>NL question answering with citations</td></tr>
+  <tr><td><code>chronicle_graph</code></td><td>Query knowledge graph relationships</td></tr>
+  <tr><td><code>chronicle_timeline</code></td><td>Query temporal snapshots</td></tr>
+</table>
+</div>
+
+<!-- TAB: Build From Scratch -->
+<div class="tab-content" id="tab-build">
+<h2>How to Build This From Scratch</h2>
+<p>14 phases, ordered by dependency. Each phase produces a usable increment.</p>
+
+<h3>Phase 1: Foundation</h3>
+<ol class="build-steps">
+  <li class="build-step">
+    <h4>Initialize Node.js Project</h4>
+    <p><code>package.json</code> with scripts (dev, test, build, lint, typecheck, pkg). <code>tsconfig.json</code> with strict mode, ESM output. <code>tsup.config.ts</code> for bundling. Entry point at <code>src/index.ts</code>.</p>
+  </li>
+  <li class="build-step">
+    <h4>Commander.js CLI Router</h4>
+    <p>Set up <code>src/index.ts</code> with <code>commander</code>. Register one command to validate the pattern. Commander handles argument parsing, help text, and option validation.</p>
+  </li>
+  <li class="build-step">
+    <h4>Configuration System</h4>
+    <p><code>ConfigManager</code> singleton: CLI args &gt; <code>LLM_COLLAB_*</code> env &gt; <code>~/.llm-collab/config.json</code> &gt; defaults. Validate with Zod. <code>llm-collab config</code> command.</p>
+  </li>
+  <li class="build-step">
+    <h4>Setup Wizard &amp; Logger</h4>
+    <p>Inquirer.js interactive prompts for <code>llm-collab setup</code>. Logger with chalk colors, structured JSON mode, <code>LLM_COLLAB_DEBUG</code> env var. Respects <code>NO_COLOR</code>.</p>
+  </li>
+</ol>
+
+<h3>Phase 2: LLM Integration</h3>
+<ol class="build-steps" style="counter-reset: step 4;">
+  <li class="build-step">
+    <h4>AI Service Abstraction</h4>
+    <p>Provider interface via Vercel AI SDK: <code>@ai-sdk/anthropic</code>, <code>@ai-sdk/openai</code>. Unified streaming. Model selection with fallback chains. Ollama and OpenRouter support.</p>
+  </li>
+  <li class="build-step">
+    <h4>Relay Server + Chat</h4>
+    <p>Express.js HTTP proxy injects API keys (<code>llm-collab relay</code>). Interactive chat REPL with streaming, history, and cost display (<code>llm-collab chat</code>).</p>
+  </li>
+  <li class="build-step">
+    <h4>Cost Tracking</h4>
+    <p>Model pricing data, per-session/per-model accumulation, budget alerts. EventEmitter-based hook: <code>onInference</code> fires with token counts and cost.</p>
+  </li>
+</ol>
+
+<h3>Phase 3: MCP Server</h3>
+<ol class="build-steps" style="counter-reset: step 7;">
+  <li class="build-step">
+    <h4>MCP Core + Tool Registry</h4>
+    <p>Use <code>@modelcontextprotocol/sdk</code>. Tool registry: name &rarr; JSON Schema &rarr; handler. MCPToolContext for service injection. Handlers never throw.</p>
+  </li>
+  <li class="build-step">
+    <h4>Capability Gating</h4>
+    <p>Only register tools for configured integrations. <code>github_*</code> tools appear only when <code>config.integrations.github.token</code> exists. Progressive disclosure.</p>
+  </li>
+  <li class="build-step">
+    <h4>Multi-Transport</h4>
+    <p>stdio (Claude Code default), Express HTTP+SSE (web clients), ws WebSocket (A2A). Same handlers, different transport layer.</p>
+  </li>
+</ol>
+
+<h3>Phase 4: Integrations</h3>
+<ol class="build-steps" style="counter-reset: step 10;">
+  <li class="build-step">
+    <h4>GitHub Service + MCP Tools</h4>
+    <p>Octokit for REST + GraphQL. Issues, PRs, search, CI status. MCP tools: <code>github_get_issue</code>, <code>github_search</code>, <code>github_create_pr</code>.</p>
+  </li>
+  <li class="build-step">
+    <h4>Linear + Additional Integrations</h4>
+    <p>Linear (<code>@linear/sdk</code>), GitLab (<code>@gitbeaker/rest</code>), Jira (<code>jira.js</code>). Each: service class + MCP tools + capability gate. All optional.</p>
+  </li>
+</ol>
+
+<h3>Phase 5: Chronicle</h3>
+<ol class="build-steps" style="counter-reset: step 12;">
+  <li class="build-step">
+    <h4>SQLite Store + Embeddings</h4>
+    <p>Per-project <code>better-sqlite3</code> database. Items, entities, relations, timeline tables. FTS5 for full-text search. Embedding generation via LLM provider or Ollama.</p>
+  </li>
+  <li class="build-step">
+    <h4>Knowledge Graph + NL Query</h4>
+    <p>Entity extraction from text. Relationship mapping. Graph traversal queries. RAG-based NL Q&amp;A with citations.</p>
+  </li>
+</ol>
+
+<h3>Phase 6: Agent System</h3>
+<ol class="build-steps" style="counter-reset: step 14;">
+  <li class="build-step">
+    <h4>Sub-Agents + Agent Launcher</h4>
+    <p>Domain experts installed to <code>~/.claude/agents/</code>. <code>llm-collab agent claude</code> configures MCP, sets env, spawns via <code>child_process.spawn()</code>.</p>
+  </li>
+  <li class="build-step">
+    <h4>Night Watch</h4>
+    <p>Coordinator polls issue trackers, routes to specialized agents via lanes. Safety gates, session monitoring, cost tracking. Autonomous operation.</p>
+  </li>
+  <li class="build-step">
+    <h4>Day Watch</h4>
+    <p>Interactive TUI (ink or blessed). Thread-based workspace with @mention routing. Session history, cost tracking, thread persistence.</p>
+  </li>
+</ol>
+
+<h3>Phase 7: Polish</h3>
+<ol class="build-steps" style="counter-reset: step 17;">
+  <li class="build-step">
+    <h4>Skills System</h4>
+    <p>Bundled markdown skills with YAML frontmatter (parsed via gray-matter). Install to <code>~/.claude/skills/</code>. Idempotent &mdash; never overwrites user edits.</p>
+  </li>
+  <li class="build-step">
+    <h4>Hooks, Auditing, Distribution</h4>
+    <p>EventEmitter hook system. JSONL audit trail. Secret scanner. Webhook notifications. <code>tsup</code> build + <code>pkg</code> binary. npm publish. Homebrew formula. Shell completions via Commander.</p>
+  </li>
+</ol>
+
+<h3>Key Dependencies</h3>
+<div class="dep-grid">
+  <div class="dep-card">
+    <div class="category">CLI Framework</div>
+    <div class="pkg">commander</div>
+    <div class="role">Argument parsing, subcommands, help</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">CLI</div>
+    <div class="pkg">inquirer</div>
+    <div class="role">Interactive prompts, wizards</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">CLI</div>
+    <div class="pkg">chalk</div>
+    <div class="role">Terminal colors (NO_COLOR aware)</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">AI / LLM</div>
+    <div class="pkg">ai (Vercel AI SDK)</div>
+    <div class="role">Unified LLM provider interface</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">AI / LLM</div>
+    <div class="pkg">@ai-sdk/anthropic</div>
+    <div class="role">Anthropic provider</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">AI / LLM</div>
+    <div class="pkg">@ai-sdk/openai</div>
+    <div class="role">OpenAI-compatible provider</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">MCP</div>
+    <div class="pkg">@modelcontextprotocol/sdk</div>
+    <div class="role">MCP server implementation</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">Validation</div>
+    <div class="pkg">zod</div>
+    <div class="role">Schema validation</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">Database</div>
+    <div class="pkg">better-sqlite3</div>
+    <div class="role">Chronicle persistence</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">HTTP</div>
+    <div class="pkg">express</div>
+    <div class="role">Relay server, HTTP+SSE transport</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">WebSocket</div>
+    <div class="pkg">ws</div>
+    <div class="role">A2A protocol, real-time transport</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">GitHub</div>
+    <div class="pkg">@octokit/rest</div>
+    <div class="role">GitHub REST API</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">Linear</div>
+    <div class="pkg">@linear/sdk</div>
+    <div class="role">Linear GraphQL API</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">Testing</div>
+    <div class="pkg">vitest</div>
+    <div class="role">Test runner, assertions, mocks</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">Build</div>
+    <div class="pkg">tsup</div>
+    <div class="role">TypeScript bundler (ESM + CJS)</div>
+  </div>
+  <div class="dep-card">
+    <div class="category">Build</div>
+    <div class="pkg">tsx</div>
+    <div class="role">Dev mode TypeScript execution</div>
+  </div>
+</div>
+
+<h3>Architecture Principles</h3>
+<table>
+  <tr><th>Principle</th><th>Implementation</th></tr>
+  <tr><td>Commands are thin</td><td>Parse args &rarr; call service &rarr; format output. No business logic in commands.</td></tr>
+  <tr><td>Services are thick</td><td>All business logic, auth, caching, retries live in services.</td></tr>
+  <tr><td>MCP tools never throw</td><td>Return <code>{ success, data }</code> or <code>{ success: false, error }</code>.</td></tr>
+  <tr><td>Config is centralized</td><td>Single ConfigManager singleton, validated with Zod schemas.</td></tr>
+  <tr><td>Progressive disclosure</td><td>Only show tools/features for configured integrations.</td></tr>
+  <tr><td>Bundle-friendly</td><td>No dynamic requires. tsup bundles to single entry.</td></tr>
+  <tr><td>Skills over code</td><td>Extend agent capabilities via markdown skill files, not code changes.</td></tr>
+  <tr><td>Every action observable</td><td>EventEmitter hooks fire on tool calls, inference, sessions. Full audit trail.</td></tr>
+  <tr><td>Safety by default</td><td>Secret scanning, PR gates, budget alerts. Escalating safety profiles.</td></tr>
+</table>
+</div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

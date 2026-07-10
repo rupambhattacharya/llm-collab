@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(nvm ls *)",
+      "Read(//Users/rupambhattacharya/.nvm/versions/node/**)",
+      "Bash(python3 -m json.tool --no-ensure-ascii)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

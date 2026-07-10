@@ -1,0 +1,48 @@
+{
+  "name": "llm-collab",
+  "version": "0.1.0",
+  "description": "Open-source CLI for AI-powered multi-agent collaboration, MCP integration, and autonomous workflows",
+  "type": "module",
+  "bin": {
+    "llm-collab": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts --",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "multi-agent",
+    "mcp",
+    "llm",
+    "claude",
+    "orchestration"
+  ],
+  "author": "Rupam Bhattacharya",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "inquirer": "^12.6.0",
+    "ora": "^8.2.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

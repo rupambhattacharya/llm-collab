@@ -1,0 +1,878 @@
+# llm-collab
+
+Open-source CLI for AI-powered multi-agent collaboration, MCP integration, and autonomous workflows.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 24+ |
+| Language | TypeScript 5.x (strict mode) |
+| CLI framework | Commander.js |
+| Interactive prompts | Inquirer.js |
+| Validation | Zod |
+| Build | tsup (library/CLI bundle) |
+| Binary | pkg (standalone executable) |
+| Testing | Vitest |
+| Database | better-sqlite3 (Chronicle) |
+| LLM | Vercel AI SDK (@ai-sdk/anthropic, @ai-sdk/openai) |
+| MCP | @modelcontextprotocol/sdk |
+| Package manager | pnpm |
+
+## Quick Reference
+
+```bash
+# Dev
+pnpm dev              # Run in dev mode (tsx watch)
+pnpm test             # Run tests (vitest)
+pnpm lint             # Lint (eslint)
+pnpm format           # Format (prettier)
+pnpm typecheck        # Type check (tsc --noEmit)
+pnpm build            # Build with tsup
+pnpm pkg              # Build standalone binary
+
+# Launch
+llm-collab agent claude          # Launch Claude Code with MCP + agents
+llm-collab agent claude -p "fix the auth bug"  # With prompt
+llm-collab mcp stdio             # Start MCP server (stdio)
+llm-collab mcp http --port 3456  # Start MCP server (HTTP+SSE)
+llm-collab relay 4000            # Start LLM relay proxy on port 4000
+llm-collab chat                  # Interactive AI chat
+llm-collab nw start              # Start Night Watch (autonomous)
+llm-collab dw                    # Start Day Watch (interactive TUI)
+
+# Integrations
+llm-collab setup                 # Interactive config wizard
+llm-collab config set github.token <token>
+llm-collab github issues search "bug"
+llm-collab linear issues list
+
+# Knowledge
+llm-collab chronicle init        # Initialize project knowledge store
+llm-collab chronicle search "auth middleware decisions"
+llm-collab chronicle ask "why did we choose JWT over sessions?"
+
+# Skills
+llm-collab skills list
+llm-collab skills install <name>
+```
+
+## Architecture
+
+### Layer Stack
+
+```
+Entry Point (src/index.ts)
+    | Commander.js CLI router — registers commands, global error handling
+    v
+Commands Layer (src/commands/)
+    | Thin orchestration: parse args -> call service -> format output
+    v
+Services Layer (src/services/)
+    | Thick business logic: auth, API wrapping, caching, typed errors
+    v
++---------------------+----------------------+
+| Configuration       | MCP Server           |
+| (src/config/)       | (src/mcp/)           |
+| ConfigManager       | Tool Registry (50+)  |
+| Zod schemas         | stdio/HTTP+SSE       |
+| Agent definitions   | Capability gating    |
++---------------------+----------------------+
+    |
+    v
++---------------------+----------------------+
+| Data & Assets       | Chronicle (Knowledge)|
+| (src/data/)         | (src/chronicle/)     |
+| Skills, costs,      | SQLite + embeddings  |
+| templates           | Knowledge graph      |
++---------------------+----------------------+
+```
+
+### Key Principles
+
+| Principle | Implementation |
+|-----------|---------------|
+| Commands are thin | Parse args -> call service -> format output. No business logic. |
+| Services are thick | All business logic, auth, caching, retries live in services. |
+| MCP tools never throw | Return `{ success, data }` or `{ success: false, error }`. |
+| Config is centralized | Single ConfigManager singleton, validated with Zod. |
+| Progressive disclosure | Only show tools/features for configured integrations. |
+| Skills over code | Extend agent capabilities via markdown files, not code changes. |
+| Bundle-friendly | tsup bundles to single CJS/ESM entry. No dynamic requires. |
+| Every action observable | Hooks fire on tool calls, inference, sessions. Full audit trail. |
+
+## File Structure
+
+```
+llm-collab/
+├── src/
+│   ├── index.ts                     # Entry point — Commander.js CLI router
+│   ├── commands/                    # CLI command handlers (thin)
+│   │   ├── agent.ts                 # Launch AI agents (claude, codex, etc.)
+│   │   ├── chat.ts                  # Interactive AI chat REPL
+│   │   ├── chronicle.ts             # Knowledge store commands
+│   │   ├── config-cmd.ts            # Config view/edit
+│   │   ├── dw.ts                    # Day Watch TUI
+│   │   ├── github.ts                # GitHub operations
+│   │   ├── linear.ts                # Linear operations
+│   │   ├── mcp.ts                   # MCP server start
+│   │   ├── nw.ts                    # Night Watch orchestrator
+│   │   ├── relay.ts                 # LLM relay proxy
+│   │   ├── setup.ts                 # Interactive config wizard
+│   │   └── skills.ts                # Skill management
+│   │
+│   ├── services/                    # Business logic (thick)
+│   │   ├── ai-service.ts            # LLM provider abstraction
+│   │   ├── chronicle-service.ts     # Knowledge persistence + graph
+│   │   ├── coordinator.ts           # Night Watch workflow engine
+│   │   ├── cost-tracker.ts          # Token usage & cost tracking
+│   │   ├── day-watch.ts             # Day Watch session manager
+│   │   ├── github-service.ts        # GitHub REST/GraphQL API
+│   │   ├── linear-service.ts        # Linear API
+│   │   ├── mcp-service.ts           # MCP tool registry & execution
+│   │   ├── relay-server.ts          # HTTP proxy with key injection
+│   │   └── thread-manager.ts        # Thread CRUD, @mention routing
+│   │
+│   ├── config/                      # Configuration
+│   │   ├── config-manager.ts        # Singleton: CLI > ENV > file > defaults
+│   │   ├── schemas.ts               # Zod schemas for all config
+│   │   ├── sub-agents.ts            # Domain agent definitions
+│   │   └── setup/                   # Interactive wizard steps
+│   │
+│   ├── mcp/                         # MCP server internals
+│   │   ├── context.ts               # Tool execution context
+│   │   ├── prompts.ts               # AI prompt templates
+│   │   ├── transports.ts            # stdio, HTTP+SSE, WebSocket
+│   │   └── tools/                   # Tool handlers by domain
+│   │       ├── chronicle-tools.ts   # Knowledge graph tools
+│   │       ├── file-tools.ts        # File read/write/list
+│   │       ├── github-tools.ts      # GitHub operations
+│   │       ├── linear-tools.ts      # Linear operations
+│   │       └── system-tools.ts      # Shell, env, system info
+│   │
+│   ├── chronicle/                   # Knowledge system
+│   │   ├── store.ts                 # SQLite persistence layer (better-sqlite3)
+│   │   ├── embeddings.ts            # Vector embedding generation
+│   │   ├── graph.ts                 # Knowledge graph (entities + relations)
+│   │   ├── timeline.ts              # Temporal versioning
+│   │   └── query.ts                 # NL query engine
+│   │
+│   ├── hooks/                       # Auditing & lifecycle hooks
+│   │   ├── hook-manager.ts          # Hook registration & dispatch
+│   │   ├── audit-hook.ts            # Action logging
+│   │   ├── cost-hook.ts             # Token/cost tracking per action
+│   │   ├── secret-scanner.ts        # Detect credentials in output
+│   │   └── webhook.ts               # External notifications (Slack, etc.)
+│   │
+│   ├── agent/                       # Agent-to-agent communication
+│   │   ├── a2a/                     # A2A protocol (JSON-RPC 2.0)
+│   │   │   ├── server.ts            # WebSocket server
+│   │   │   ├── client.ts            # WebSocket client
+│   │   │   └── protocol.ts          # Message types & handlers
+│   │   └── bridges/                 # Agent tool adapters
+│   │       ├── claude-bridge.ts     # Claude Code subprocess
+│   │       ├── codex-bridge.ts      # Codex CLI adapter
+│   │       └── generic-bridge.ts    # Generic agent adapter
+│   │
+│   ├── data/                        # Embedded assets
+│   │   ├── bundled-skills.ts        # Skill markdown as TS strings
+│   │   ├── llm-costs.ts             # Token pricing per model
+│   │   └── templates/               # Agent & prompt templates
+│   │
+│   ├── utils/                       # Shared utilities
+│   │   ├── logger.ts                # Structured logging
+│   │   ├── errors.ts                # Typed error classes
+│   │   └── format.ts                # Output formatters (chalk)
+│   │
+│   └── types/                       # Shared TypeScript types
+│       └── index.ts
+│
+├── tests/                           # Test files mirror src/ structure
+│   ├── services/
+│   ├── chronicle/
+│   └── mcp/
+│
+├── .claude/
+│   ├── agents/                      # Claude Code agent definitions
+│   │   ├── orchestrator.md          # Opus 4.6 — delegates to specialists
+│   │   ├── planner.md               # Opus 4.6 — creates implementation plans
+│   │   ├── coder.md                 # Sonnet 5 — writes code
+│   │   └── designer.md              # Sonnet 5 — UI/UX work
+│   └── settings.json                # Claude Code project settings
+│
+├── docs/
+│   ├── architecture.html            # Visual architecture diagram
+│   ├── CONTRIBUTING.md              # Contribution guide
+│   └── guides/                      # Feature-specific guides
+│
+├── package.json                     # Dependencies & scripts
+├── tsconfig.json                    # TypeScript config (strict)
+├── tsup.config.ts                   # Build config
+├── vitest.config.ts                 # Test config
+├── .eslintrc.cjs                    # Lint config
+├── .prettierrc                      # Format config
+├── CLAUDE.md                        # This file
+├── README.md                        # Open-source docs
+└── LICENSE                          # MIT
+```
+
+## Commander.js Pattern
+
+All commands follow this pattern:
+
+```typescript
+// src/commands/github.ts
+import { Command } from "commander";
+import { ConfigManager } from "../config/config-manager.js";
+import { GitHubService } from "../services/github-service.js";
+
+export const githubCommand = new Command("github")
+  .description("GitHub operations")
+  .addCommand(
+    new Command("issues")
+      .command("search <query>")
+      .option("--repo <repo>", "Target repository")
+      .option("--state <state>", "Issue state", "open")
+      .action(async (query, options) => {
+        const config = ConfigManager.load();
+        const github = new GitHubService(config.integrations.github);
+        const results = await github.searchIssues(query, options);
+        // format and output
+      })
+  );
+```
+
+The entry point wires commands together:
+
+```typescript
+// src/index.ts
+#!/usr/bin/env node
+import { Command } from "commander";
+import { githubCommand } from "./commands/github.js";
+import { agentCommand } from "./commands/agent.js";
+// ...
+
+const program = new Command()
+  .name("llm-collab")
+  .version("0.1.0")
+  .description("AI-powered multi-agent collaboration CLI")
+  .option("--debug", "Enable debug logging")
+  .option("--config <path>", "Config file path");
+
+program.addCommand(agentCommand);
+program.addCommand(githubCommand);
+// ... register all commands
+
+program.parseAsync(process.argv).catch((err) => {
+  // global error handler with typed errors
+  process.exit(1);
+});
+```
+
+## Implementation Phases
+
+### Phase 1: Foundation (MVP)
+
+**Goal:** Bootable CLI with config system and one working command.
+
+1. **Project bootstrap**
+   - `package.json` with scripts (dev, test, build, lint, format, typecheck, pkg)
+   - `tsconfig.json` with strict mode, ESM output, path aliases
+   - `tsup.config.ts` for building CLI bundle
+   - `src/index.ts` with Commander.js router and global error handler
+   - Debug logging via `LLM_COLLAB_DEBUG` env var
+
+2. **Configuration system**
+   - `ConfigManager` singleton: CLI args > `LLM_COLLAB_*` env vars > `~/.llm-collab/config.json` > defaults
+   - Zod schemas for all config sections
+   - `llm-collab config get/set` commands
+
+3. **Setup wizard**
+   - `llm-collab setup` — Inquirer.js prompts for provider keys, integrations
+   - Progressive: only ask for what's relevant
+   - Validate connections during setup
+
+4. **Logger**
+   - Levels: debug, info, warn, error
+   - `passThrough` for user-facing output
+   - Structured JSON mode for machine consumption
+   - Uses chalk for colored terminal output; respects `NO_COLOR`
+
+### Phase 2: LLM Integration
+
+**Goal:** Multi-provider AI access with cost tracking.
+
+5. **AI service abstraction**
+   - Provider interface: Anthropic, OpenAI, Ollama, OpenRouter, any OpenAI-compatible
+   - Vercel AI SDK (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`) for unified streaming
+   - Model selection with fallback chains
+
+6. **Relay server**
+   - `llm-collab relay <port>` — Express.js HTTP proxy
+   - Accepts OpenAI-compatible requests, injects API key from config
+   - No client-side key management needed
+   - Optional client auth (`--require-auth`) with named keys in `~/.llm-collab/keys/keys.json`
+
+7. **Chat REPL**
+   - `llm-collab chat` — streaming terminal chat
+   - Conversation history, model selection
+   - Token usage and cost display per message
+   - Cost tracking hooks fire on every inference
+
+8. **Cost tracking system**
+   - `src/data/llm-costs.ts` — pricing data for all models
+   - Per-session, per-model, per-tool cost accumulation
+   - `llm-collab costs` command to view spending
+   - Hook: `onInference` fires with token counts + cost
+
+### Phase 3: MCP Server
+
+**Goal:** AI agents can use project integrations via MCP.
+
+9. **MCP core**
+   - `@modelcontextprotocol/sdk` server
+   - Tool registry pattern: name -> JSON Schema -> handler
+   - MCPToolContext injects authenticated services
+   - Handlers never throw — return `{ success, data }` or `{ success: false, error }`
+
+10. **Capability gating (progressive disclosure)**
+    - Only register tools for configured integrations
+    - `INTEGRATION_TOOL_MAP`: prefix -> config check function
+    - Example: `github_*` tools only if `config.integrations.github.token` exists
+
+11. **Transports**
+    - stdio (default for Claude Code)
+    - HTTP + SSE via Express.js (for web clients)
+    - WebSocket via ws (for real-time / A2A)
+
+12. **Core tools**
+    - File: `file_read`, `file_write`, `file_list`, `file_search`
+    - System: `shell_execute`, `env_get`, `system_info`
+    - Chronicle: `chronicle_search`, `chronicle_read`, `chronicle_write`, `chronicle_ask`
+
+### Phase 4: Service Integrations
+
+**Goal:** Connect to external systems (all optional via capability gating).
+
+13. **GitHub service**
+    - Issues, PRs, search, CI status
+    - Octokit for REST + GraphQL
+    - MCP tools: `github_get_issue`, `github_search`, `github_create_pr`, etc.
+
+14. **Linear service**
+    - Issues, projects, cycles
+    - `@linear/sdk` GraphQL client
+    - MCP tools: `linear_get_issue`, `linear_search`, `linear_create_issue`
+
+15. **Additional integrations (pluggable)**
+    - GitLab (via `@gitbeaker/rest`)
+    - Jira (REST API via `jira.js`)
+    - Confluence (REST API)
+    - Each follows the same pattern: service class + MCP tools + capability gate
+
+### Phase 5: Chronicle (Knowledge System)
+
+**Goal:** Persistent project memory with knowledge graph and semantic search.
+
+16. **Chronicle store**
+    - `better-sqlite3` database at `~/.llm-collab/chronicle/<project-hash>/chronicle.db`
+    - Schema: items (id, content, metadata JSON, embedding BLOB, created_at, updated_at)
+    - Schema: entities (id, name, type, properties JSON)
+    - Schema: relations (from_id, to_id, type, metadata JSON)
+    - Schema: timeline (id, item_id, snapshot JSON, timestamp)
+
+17. **Embeddings**
+    - Generate embeddings via configured LLM provider (Anthropic Voyage, OpenAI)
+    - Fallback: local embedding model via Ollama
+    - Cosine similarity search in-process
+    - Hybrid: keyword (FTS5) + vector search
+
+18. **Knowledge graph**
+    - Entity extraction from conversations, code, and decisions
+    - Entity types: file, function, decision, person, issue, concept
+    - Relation types: depends_on, authored_by, decided_in, blocks, implements
+    - Graph traversal queries: "what depends on auth_middleware?"
+    - `llm-collab chronicle graph` — visualize entity graph
+
+19. **Timeline & versioning**
+    - Snapshot items over time
+    - "What did we know about X on date Y?"
+    - Decision log: records architectural decisions with rationale
+
+20. **NL query engine**
+    - `llm-collab chronicle ask "why did we choose JWT?"` — answers with citations
+    - Uses RAG: semantic search -> context assembly -> LLM answer
+    - MCP tool: `chronicle_ask` for agent access
+
+21. **CLI commands**
+    - `llm-collab chronicle init` — initialize for current project
+    - `llm-collab chronicle push <content>` — add knowledge item
+    - `llm-collab chronicle search <query>` — semantic search
+    - `llm-collab chronicle ask <question>` — NL Q&A
+    - `llm-collab chronicle graph [--entity <name>]` — show graph
+    - `llm-collab chronicle timeline` — show decision timeline
+
+### Phase 6: Agent System & Multi-Agent Delegation
+
+**Goal:** Orchestrated multi-agent workflows with specialized agents.
+
+22. **Sub-agent definitions**
+    - `src/config/sub-agents.ts` — agent configs as `SubAgentConfig` objects
+    - Each: name, description (trigger conditions), system prompt, tools[], temperature
+    - Domain agents: github-expert, linear-expert, chronicle-expert
+    - Export to `~/.claude/agents/` as YAML frontmatter + markdown
+
+23. **Agent launcher**
+    - `llm-collab agent claude` — configures and spawns Claude Code
+    - Sets `ANTHROPIC_BASE_URL` (if relay), injects MCP endpoints
+    - Uses `child_process.spawn()` with `--permission-mode`, `--allowed-tools`, `--live`
+    - Flags: `-p <prompt>`, `-r <session>`, `--live`
+    - Also: `llm-collab agent codex`, `llm-collab agent opencode`
+
+24. **Multi-agent delegation**
+    - Orchestrator (Opus 4.6) receives request, analyzes, delegates
+    - Planner (Opus 4.6) researches and creates implementation plan
+    - Coder (Sonnet 5) implements following the plan
+    - Designer (Sonnet 5) handles UI/UX work
+    - Agents defined in `.claude/agents/` — see agent definitions section
+
+25. **Complexity routing**
+    - Low complexity -> Haiku (fast, cheap)
+    - Medium -> Sonnet (balanced)
+    - High -> Opus with extended thinking
+    - Configurable thresholds
+
+### Phase 7: Night Watch (Autonomous Orchestration)
+
+**Goal:** Autonomous agent system that processes work items from issue trackers.
+
+26. **Coordinator**
+    - Markdown config files with YAML frontmatter (parsed via `gray-matter`)
+    - Lanes: named work streams, each routing to a "soul" (specialized agent)
+    - Souls: system prompt, tools[], model, permission mode, safety profile
+    - Polling: interval, source (GitHub Issues, Linear, Jira), max concurrent
+
+27. **Safety gates**
+    - Safety profiles: none, balanced, strict, paranoid
+    - PR gates: maxChangedFiles, deletionRatioThreshold
+    - Secret scanner on agent outputs
+    - Completion gates (require human verification at strict+)
+    - Audit trail of all actions
+
+28. **Session management**
+    - Track active sessions per lane
+    - Timeout handling
+    - Progress reporting
+    - Cost tracking per session
+
+29. **Night Watch CLI**
+    - `llm-collab nw start` — begin autonomous processing
+    - `llm-collab nw status` — show active sessions
+    - `llm-collab nw audit` — dump execution history
+    - `llm-collab nw stop` — graceful shutdown
+
+### Phase 8: Day Watch (Interactive Multi-Agent Chat)
+
+**Goal:** Interactive TUI for chatting with multiple AI agents.
+
+30. **TUI interface**
+    - Thread-based chat workspace (using `ink` or `blessed`)
+    - @mention routing: `@claude`, `@codex`, `@opencode`
+    - Session history sidebar
+    - Cost per session display
+
+31. **Thread management**
+    - Import Claude Code sessions from `~/.claude/projects/`
+    - Thread persistence across sessions
+    - Thread search and filtering
+
+### Phase 9: Skills System
+
+**Goal:** Extend agent capabilities via installable markdown files.
+
+32. **Bundled skills**
+    - Embedded as TypeScript strings in `src/data/bundled-skills.ts`
+    - Installed to `~/.claude/skills/` on setup
+    - Never overwrites user edits (idempotent)
+
+33. **Skill format**
+    ```yaml
+    ---
+    userInvocable: true
+    allowedTools: [github_*, chronicle_*]
+    model: claude-sonnet-5
+    readinessCheck: "gh auth status"
+    requiredEnvVars:
+      - name: GITHUB_TOKEN
+        description: GitHub personal access token
+        required: true
+    ---
+    Skill instructions in markdown...
+    ```
+
+34. **Skill commands**
+    - `llm-collab skills list` — show available/installed
+    - `llm-collab skills install <name>` — install a skill
+    - `llm-collab skills search <query>` — find skills
+
+### Phase 10: Hooks & Auditing
+
+**Goal:** Comprehensive auditing, cost tracking, and lifecycle hooks.
+
+35. **Hook system**
+    - `HookManager` — EventEmitter-based lifecycle hooks
+    - Hook types: `onToolCall`, `onInference`, `onSessionStart`, `onSessionEnd`, `onError`
+    - Hooks receive context (tool name, tokens, cost, duration)
+
+36. **Audit hook**
+    - Log every tool execution with timestamp, tool, input summary, result status
+    - Stored in `~/.llm-collab/audit/` as JSONL files (one per day)
+    - `llm-collab audit` command to query
+
+37. **Cost hook**
+    - Track token usage per model, per session, per tool
+    - Configurable budget alerts
+    - `llm-collab costs --today` / `--this-week` / `--by-model`
+
+38. **Secret scanner**
+    - Regex patterns for common credential formats (AWS keys, tokens, passwords)
+    - Runs on agent outputs before display/commit
+    - Configurable: warn or block
+
+39. **Webhook notifications**
+    - Slack, Discord, generic webhook (via `node-fetch`)
+    - Events: session_start, session_complete, session_failed, budget_alert
+    - Configurable in config.json
+
+### Phase 11: A2A Protocol (Agent-to-Agent)
+
+**Goal:** Agents can delegate to other agents via structured protocol.
+
+40. **A2A server**
+    - JSON-RPC 2.0 over WebSocket (`ws` package)
+    - Methods: `shell.execute`, `file.read`, `file.write`, `agent.delegate`
+    - Optional TLS
+
+41. **A2A client**
+    - Connect to running agents
+    - Send commands, stream results
+    - Used by Night Watch coordinator
+
+### Phase 12: Error Handling & Resilience
+
+**Goal:** Graceful degradation, retries, and clear error reporting.
+
+42. **Typed errors**
+    - `ConfigError`, `AuthError`, `APIError`, `MCPError`, `ChronicleError`
+    - Each carries: message, code, actionable hint
+    - All extend a base `LLMCollabError` class
+
+43. **Retry strategies**
+    - Exponential backoff for transient API failures (via `p-retry`)
+    - Circuit breaker for persistent failures
+    - Graceful degradation: if GitHub is down, other tools still work
+
+44. **Payload cleaning**
+    - Truncate large API responses for LLM consumption
+    - Strip unnecessary fields
+    - Configurable max payload size
+
+### Phase 13: Testing
+
+45. **Unit tests**
+    - Vitest with describe/it/beforeEach
+    - Mocks for external APIs (msw for HTTP mocking)
+    - Snapshot tests for CLI output
+
+46. **Integration tests**
+    - MCP smoke tests: verify tool registration
+    - Chronicle tests: write -> search -> verify
+    - Config tests: hierarchy resolution
+
+47. **Arena benchmarking**
+    - Skills arena: LLM-as-judge scoring
+    - Agents arena: scenario-based evaluation
+
+### Phase 14: Distribution
+
+48. **Compilation & distribution**
+    - `tsup` for ESM + CJS bundle
+    - `pkg` for standalone binary (macOS, Linux, Windows)
+    - npm publish (`npx llm-collab`)
+    - Homebrew formula
+    - Shell completions generation (zsh/bash/fish) via Commander's built-in
+
+## Configuration Schema
+
+```jsonc
+// ~/.llm-collab/config.json
+{
+  "ai": {
+    "default_provider": "anthropic",
+    "providers": {
+      "anthropic": { "api_key": "sk-..." },
+      "openai": { "api_key": "sk-..." },
+      "ollama": { "base_url": "http://localhost:11434" },
+      "openrouter": { "api_key": "sk-..." }
+    },
+    "default_model": "claude-sonnet-5",
+    "complexity_routing": {
+      "low": "claude-haiku-4-5",
+      "medium": "claude-sonnet-5",
+      "high": "claude-opus-4-8"
+    }
+  },
+  "integrations": {
+    "github": { "token": "ghp_...", "org": "myorg" },
+    "linear": { "api_key": "lin_..." },
+    "gitlab": { "url": "https://gitlab.com", "token": "glpat-..." },
+    "jira": { "url": "https://myorg.atlassian.net", "email": "...", "token": "..." }
+  },
+  "chronicle": {
+    "embedding_provider": "anthropic",
+    "embedding_model": "voyage-3",
+    "auto_capture": true
+  },
+  "relay": {
+    "port": 4000,
+    "require_auth": false
+  },
+  "hooks": {
+    "audit": { "enabled": true, "retention_days": 30 },
+    "costs": { "enabled": true, "budget_alert_usd": 50 },
+    "secrets": { "enabled": true, "action": "warn" },
+    "webhooks": [
+      { "url": "https://hooks.slack.com/...", "events": ["session_complete", "budget_alert"] }
+    ]
+  },
+  "night_watch": {
+    "safety_profile": "balanced",
+    "max_concurrent_sessions": 3,
+    "pr_gates": {
+      "max_changed_files": 20,
+      "deletion_ratio_threshold": 0.5
+    }
+  }
+}
+```
+
+## Agent Definitions
+
+Four agents in `.claude/agents/`:
+
+| Agent | Model | Role |
+|-------|-------|------|
+| orchestrator | Opus 4.6 | Receives requests, delegates to specialists, integrates results |
+| planner | Opus 4.6 | Researches codebase, creates implementation plans |
+| coder | Sonnet 5 | Writes code following mandatory principles, uses context7 MCP |
+| designer | Sonnet 5 | UI/UX work: components, styling, terminal interfaces |
+
+Delegation flow: User -> Orchestrator -> Planner (if complex) -> Coder/Designer -> Orchestrator validates
+
+## Sub-Agent Definitions (Domain Experts)
+
+Installed to `~/.claude/agents/` via `llm-collab setup`:
+
+| Agent | Triggers On | Tools |
+|-------|-------------|-------|
+| github-expert | Issue refs, PR URLs, CI questions | github_* |
+| linear-expert | Issue keys, project references | linear_* |
+| chronicle-expert | Knowledge queries, "what do we know about" | chronicle_* |
+
+## Naming Conventions
+
+- **Files:** kebab-case for all files (`config-manager.ts`, `github-service.ts`)
+- **Functions:** verb-first camelCase (`getUser`, `createIssue`)
+- **Booleans:** question-form (`isValid`, `hasPermission`)
+- **Constants:** UPPER_SNAKE_CASE
+- **Types/Interfaces:** PascalCase, no `I` prefix
+- **Config keys:** snake_case in JSON, camelCase in TypeScript
+- **CLI commands:** kebab-case (`night-watch`, `day-watch`)
+- **MCP tools:** snake_case with domain prefix (`github_get_issue`, `chronicle_search`)
+
+## Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `LLM_COLLAB_DEBUG` | Enable debug logging |
+| `LLM_COLLAB_CONFIG` | Override config file path |
+| `LLM_COLLAB_HOME` | Override home directory (default `~/.llm-collab`) |
+| `ANTHROPIC_API_KEY` | Anthropic API key (fallback) |
+| `OPENAI_API_KEY` | OpenAI API key (fallback) |
+| `GITHUB_TOKEN` | GitHub token (fallback) |
+| `NO_COLOR` | Disable colored output |
+
+## Security Model
+
+| Layer | Mechanism |
+|-------|-----------|
+| Credential storage | Config file with restricted permissions (600) |
+| Secret scanning | Regex patterns on agent output before display/commit |
+| PR safety gates | Max changed files, deletion ratio threshold |
+| Safety profiles | none -> balanced -> strict -> paranoid |
+| Relay auth | Optional client authentication with named keys |
+| MCP tool gating | Only register tools for configured integrations |
+| Audit trail | All tool executions logged with timestamps |
+
+## Local File Layout
+
+```
+~/.llm-collab/
+├── config.json              # Main configuration
+├── keys/                    # Relay client auth keys
+│   └── keys.json
+├── chronicle/               # Knowledge stores (per project)
+│   └── <project-hash>/
+│       └── chronicle.db     # SQLite database (better-sqlite3)
+├── audit/                   # Audit logs
+│   └── 2026-07-10.jsonl
+├── costs/                   # Cost tracking data
+│   └── sessions.jsonl
+└── cache/                   # Response cache (TTL-based)
+
+~/.claude/
+├── agents/                  # Sub-agent definitions
+│   ├── github-expert.md
+│   ├── linear-expert.md
+│   └── chronicle-expert.md
+├── skills/                  # Installed skills
+│   ├── code-review.md
+│   ├── chronicle-capture.md
+│   └── cost-report.md
+└── settings.json            # Claude Code settings (hooks, permissions)
+```
+
+## Key Dependencies
+
+| Category | Package | Purpose |
+|----------|---------|---------|
+| CLI | commander | Command parsing, subcommands, help generation |
+| CLI | inquirer | Interactive prompts for setup wizard |
+| CLI | chalk | Terminal colors (respects NO_COLOR) |
+| CLI | ora | Spinners for async operations |
+| AI | ai (Vercel AI SDK) | Unified LLM provider interface |
+| AI | @ai-sdk/anthropic | Anthropic provider |
+| AI | @ai-sdk/openai | OpenAI-compatible provider |
+| MCP | @modelcontextprotocol/sdk | MCP server implementation |
+| Validation | zod | Schema validation for config & API responses |
+| Database | better-sqlite3 | Chronicle persistence (SQLite) |
+| HTTP | express | Relay server, HTTP+SSE transport |
+| HTTP | ws | WebSocket for A2A protocol |
+| GitHub | @octokit/rest | GitHub REST API |
+| GitHub | @octokit/graphql | GitHub GraphQL API |
+| Linear | @linear/sdk | Linear API client |
+| GitLab | @gitbeaker/rest | GitLab API client |
+| Testing | vitest | Test runner, assertions, mocks |
+| Testing | msw | HTTP mocking for API tests |
+| Build | tsup | TypeScript bundler |
+| Build | tsx | TypeScript execution (dev mode) |
+| Build | pkg | Standalone binary compilation |
+| Utilities | gray-matter | YAML frontmatter parsing |
+| Utilities | p-retry | Retry with exponential backoff |
+
+## Implementation Progress
+
+### Phase 1: Foundation (MVP) — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Project bootstrap | `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts` | Done |
+| Entry point | `src/index.ts` | Done — Commander.js router, global error handler, `--debug`, `--no-audit` |
+| Typed errors | `src/utils/errors.ts` | Done — `LLMCollabError`, `ConfigError`, `AuthError`, `APIError`, `MCPError`, `ChronicleError` |
+| Logger | `src/utils/logger.ts` | Done — debug/info/warn/error to stderr, `passThrough` to stdout, chalk colors |
+| ConfigManager | `src/config/config-manager.ts` | Done — singleton, CLI > ENV > file > defaults, Zod validation, dot-notation get/set |
+| Config schemas | `src/config/schemas.ts` | Done — all sections: ai, integrations, chronicle, relay, hooks, night_watch |
+| Config command | `src/commands/config-cmd.ts` | Done — `config get/set/list/path`, auto-parse booleans/numbers |
+| Setup wizard | `src/commands/setup.ts` | Done — `@inquirer/prompts`, provider + GitHub + Linear setup, merges existing |
+| Audit logger | `src/hooks/audit-logger.ts` | Done — JSONL to `~/.llm-collab/audit/YYYY-MM-DD.jsonl`, session/command/config/tool/decision/error events |
+| Audit command | `src/commands/audit.ts` | Done — `audit show`, `audit tail`, `audit dates`, `--json`, `--event`, `--command` filters |
+
+**Tested commands:**
+- `llm-collab --help` / `--version`
+- `llm-collab config get/set/list/path`
+- `llm-collab setup` (interactive wizard)
+- `llm-collab audit tail` / `audit tail -e config_change --json`
+- Typecheck passes (`npx tsc --noEmit`)
+
+### Phase 2: LLM Integration — NOT STARTED (next)
+
+**To implement:**
+1. `src/services/ai-service.ts` — Vercel AI SDK provider abstraction (Anthropic, OpenAI, Ollama, OpenRouter)
+2. `src/services/relay-server.ts` — Express.js HTTP proxy with key injection
+3. `src/commands/relay.ts` — `llm-collab relay <port>`
+4. `src/commands/chat.ts` — streaming terminal chat REPL
+5. `src/data/llm-costs.ts` — token pricing data for all models
+6. `src/services/cost-tracker.ts` — per-session/model/tool cost accumulation
+
+**Dependencies to add:** `ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `express`, `@types/express`
+
+### Phases 3–14 — NOT STARTED
+
+See phase descriptions above for full details.
+
+## Files Implemented So Far
+
+```
+src/
+├── index.ts                 # Entry point — Commander.js, audit session tracking
+├── commands/
+│   ├── audit.ts             # Audit log viewer (show/tail/dates)
+│   ├── config-cmd.ts        # Config get/set/list/path with audit logging
+│   └── setup.ts             # Interactive wizard with audit logging
+├── config/
+│   ├── config-manager.ts    # ConfigManager singleton
+│   └── schemas.ts           # Zod schemas for all config
+├── hooks/
+│   └── audit-logger.ts      # JSONL audit logger singleton
+└── utils/
+    ├── errors.ts            # Typed error classes
+    └── logger.ts            # Structured logger
+```
+
+## How to Resume Development
+
+```bash
+# Ensure correct Node version
+nvm use 24
+
+# Install deps (if needed)
+pnpm install
+
+# Verify current state
+pnpm typecheck              # Should pass clean
+npx tsx src/index.ts --help  # Should show all commands
+
+# Start Phase 2
+# 1. pnpm add ai @ai-sdk/anthropic @ai-sdk/openai express @types/express
+# 2. Create src/services/ai-service.ts
+# 3. Create src/commands/chat.ts and src/commands/relay.ts
+# 4. Wire into src/index.ts
+# 5. Add audit logging to new commands
+# 6. Test: llm-collab chat, llm-collab relay 4000
+```
+
+## Audit Log Format
+
+Every CLI action writes a JSONL line to `~/.llm-collab/audit/YYYY-MM-DD.jsonl`:
+
+```json
+{
+  "timestamp": "2026-07-10T15:27:12.836Z",
+  "seq": 3,
+  "event": "config_change",
+  "detail": "relay.port: 4000 -> 5000",
+  "meta": {
+    "key": "relay.port",
+    "oldValue": 4000,
+    "newValue": 5000,
+    "sessionId": "1783697232823-37a02h",
+    "pid": 49731
+  }
+}
+```
+
+Event types: `session_start`, `session_end`, `command_start`, `command_end`, `config_change`, `config_read`, `tool_call`, `decision`, `error`
+
+Sensitive values (keys matching `/key|token|secret|password|credential/i`) are auto-redacted in audit logs.
