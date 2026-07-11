@@ -61,6 +61,8 @@ Link the package so `llm-collab` works from any directory:
 pnpm link --global
 ```
 
+> **Troubleshooting `ERR_PNPM_NO_GLOBAL_BIN_DIR`:** pnpm needs `PNPM_HOME` set and on your `PATH`. Run `pnpm setup` once to configure it, then **open a new terminal** (or `source ~/.zshrc` / `~/.bashrc`) so the exported variable takes effect before retrying `pnpm link --global`.
+
 Verify the installation:
 
 ```bash
