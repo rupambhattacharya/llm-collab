@@ -76,30 +76,59 @@ Hooks fire on: tool calls, LLM inference, session start/end, errors. Configure w
 
 ## Installation
 
-### From npm
+### Prerequisites
 
-```bash
-npm install -g llm-collab
-# or
-npx llm-collab
-```
+- **Node.js 24+** — `nvm install 24` or download from [nodejs.org](https://nodejs.org)
+- **pnpm** — `npm install -g pnpm`
 
-### From Source
+### Install from Source
 
 ```bash
 git clone https://github.com/rupambhattacharya/llm-collab.git
 cd llm-collab
 pnpm install
 pnpm build
+```
+
+### Make it Available Globally
+
+After building, link the package so `llm-collab` works from any directory:
+
+```bash
 pnpm link --global
 ```
 
-### Standalone Binary
+This creates a symlink from your global bin directory to `dist/index.js`. The `llm-collab` command is now available system-wide:
 
 ```bash
-# Build for your platform
-pnpm pkg
-# Output: ./bin/llm-collab
+llm-collab --version   # verify it works
+llm-collab setup       # run the setup wizard
+```
+
+To unlink later: `pnpm unlink --global`
+
+### Alternative: Run Without Linking
+
+If you prefer not to install globally, you can run directly from the project:
+
+```bash
+# Via pnpm
+pnpm start -- --help
+
+# Via tsx (dev mode, no build needed)
+npx tsx src/index.ts --help
+
+# Via node (after building)
+node dist/index.js --help
+```
+
+### Rebuilding After Updates
+
+```bash
+git pull
+pnpm install    # in case deps changed
+pnpm build      # rebuild dist/
+# global link still points to dist/, so llm-collab picks up changes immediately
 ```
 
 ## Quick Start
@@ -144,8 +173,8 @@ Configure your editor to use the MCP server:
 {
   "mcpServers": {
     "llm-collab": {
-      "command": "npx",
-      "args": ["-y", "llm-collab", "mcp", "stdio"]
+      "command": "llm-collab",
+      "args": ["mcp", "stdio"]
     }
   }
 }
@@ -222,7 +251,7 @@ For the full interactive architecture diagram, see [docs/architecture.html](docs
 | CLI | Commander.js |
 | Prompts | Inquirer.js |
 | Validation | Zod |
-| Build | tsup + pkg |
+| Build | tsup |
 | Tests | Vitest |
 | Database | better-sqlite3 |
 | LLM | Vercel AI SDK |
@@ -292,7 +321,7 @@ llm-collab config set hooks.costs.budget_alert_usd 100
 # Install dependencies
 pnpm install
 
-# Run in dev mode (tsx watch)
+# Run in dev mode (tsx watch, auto-reloads)
 pnpm dev
 
 # Run tests
@@ -307,11 +336,8 @@ pnpm format
 # Type check
 pnpm typecheck
 
-# Build
+# Build (output to dist/)
 pnpm build
-
-# Build standalone binary
-pnpm pkg
 ```
 
 ## Contributing
