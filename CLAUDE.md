@@ -827,7 +827,27 @@ All items implemented and tested:
 - `llm-collab chronicle timeline` (shows chronological activity)
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phases 6–12 — NOT STARTED
+### Phase 6: Agent System & Multi-Agent Delegation — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Sub-agent definitions | `src/config/sub-agents.ts` | Done — `SubAgentConfig` interface, 3 domain agents (github-expert, linear-expert, chronicle-expert) with system prompts, scoped tools, model assignments, `generateAgentMarkdown()` for YAML frontmatter export |
+| Agent service | `src/services/agent-service.ts` | Done — `AgentService` class: launches Claude/Codex/OpenCode via `child_process.spawn()`, builds env with API keys, generates MCP config, `installDomainAgents()` writes to `~/.claude/agents/` (idempotent), `getInstalledAgents()`, complexity routing (low/medium/high -> model) |
+| Agent CLI | `src/commands/agent.ts` | Done — `agent claude/codex/opencode` (`-p`, `-r`, `--model`, `--live` flags), `agent install` (idempotent, `--force`), `agent list` (`--json`) |
+| Entry point wiring | `src/index.ts` | Done — `agentCommand` imported and registered (11 total commands) |
+
+**Dependencies added:** none — reuses `child_process` (Node built-in) and existing `gray-matter`/`zod` infra
+
+**Tested commands:**
+- `llm-collab --help` (shows all 11 commands)
+- `llm-collab agent --help` (shows claude/codex/opencode/install/list subcommands)
+- `llm-collab agent install` (writes domain agents to `~/.claude/agents/`, idempotent on rerun)
+- `llm-collab agent list` / `agent list --json`
+- Typecheck passes (`npx tsc --noEmit`)
+
+### Phases 7–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -837,6 +857,7 @@ See phase descriptions above for full details.
 src/
 ├── index.ts                 # Entry point — Commander.js, audit session tracking
 ├── commands/
+│   ├── agent.ts             # Agent launcher CLI (claude/codex/opencode, install, list)
 │   ├── audit.ts             # Audit log viewer (show/tail/dates)
 │   ├── chat.ts              # Interactive AI chat REPL with streaming
 │   ├── chronicle.ts         # Chronicle CLI (init, push, search, ask, graph, timeline, stats)
@@ -855,7 +876,8 @@ src/
 │   └── timeline.ts          # Temporal versioning and decision log
 ├── config/
 │   ├── config-manager.ts    # ConfigManager singleton
-│   └── schemas.ts           # Zod schemas for all config
+│   ├── schemas.ts           # Zod schemas for all config
+│   └── sub-agents.ts        # Domain agent definitions (github/linear/chronicle-expert)
 ├── data/
 │   └── llm-costs.ts         # Model pricing data
 ├── hooks/
@@ -869,6 +891,7 @@ src/
 │       ├── linear-tools.ts  # 7 Linear MCP tools (issues, teams, projects)
 │       └── system-tools.ts  # shell_execute, env_get, system_info
 ├── services/
+│   ├── agent-service.ts     # Agent launcher (spawn Claude/Codex/OpenCode), domain agent install
 │   ├── ai-service.ts        # Multi-provider LLM abstraction (Vercel AI SDK)
 │   ├── cost-tracker.ts      # Token/cost tracking with JSONL persistence
 │   ├── github-service.ts    # GitHub REST + GraphQL via Octokit
@@ -890,15 +913,14 @@ pnpm install
 
 # Verify current state
 pnpm typecheck              # Should pass clean
-npx tsx src/index.ts --help  # Should show all 10 commands
+npx tsx src/index.ts --help  # Should show all 11 commands
 
-# Start Phase 6 (Agent System & Multi-Agent Delegation)
-# 1. Create src/config/sub-agents.ts — domain agent definitions
-# 2. Create src/commands/agent.ts — agent launcher (claude, codex, opencode)
-# 3. Generate ~/.claude/agents/ YAML+markdown files from sub-agent configs
-# 4. Implement complexity routing in agent launcher
-# 5. Wire into src/index.ts
-# 6. Test: llm-collab agent claude --help
+# Start Phase 7 (Skills System)
+# 1. Create src/data/bundled-skills.ts — skill markdown embedded as TS strings
+# 2. Create src/commands/skills.ts — skills list/install/search
+# 3. Wire skill installation into setup wizard (installs to ~/.claude/skills/, idempotent)
+# 4. Wire into src/index.ts
+# 5. Test: llm-collab skills list
 ```
 
 ## Audit Log Format

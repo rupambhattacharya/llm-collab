@@ -620,11 +620,19 @@
   </li>
 </ol>
 
-<h3>Phase 6: Agent System</h3>
+<h3>Phase 6: Agent System <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 14;">
   <li class="build-step">
-    <h4>Sub-Agents + Agent Launcher</h4>
-    <p>Domain experts installed to <code>~/.claude/agents/</code>. <code>llm-collab agent claude</code> configures MCP, sets env, spawns via <code>child_process.spawn()</code>.</p>
+    <h4>Sub-Agent Definitions</h4>
+    <p><code>src/config/sub-agents.ts</code> &mdash; <code>SubAgentConfig</code> interface and 3 domain agents (github-expert, linear-expert, chronicle-expert) with system prompts, scoped tools, and model assignments. <code>generateAgentMarkdown()</code> exports each as YAML frontmatter + markdown.</p>
+  </li>
+  <li class="build-step">
+    <h4>Agent Launcher Service</h4>
+    <p><code>src/services/agent-service.ts</code> &mdash; <code>AgentService</code> spawns Claude Code, Codex, or OpenCode via <code>child_process.spawn()</code>, builds env with provider API keys, generates MCP config, and installs domain agents to <code>~/.claude/agents/</code> idempotently via <code>installDomainAgents()</code>. Includes complexity routing (low/medium/high &rarr; model).</p>
+  </li>
+  <li class="build-step">
+    <h4>Agent CLI</h4>
+    <p><code>src/commands/agent.ts</code> &mdash; <code>agent claude/codex/opencode</code> (<code>-p</code>, <code>-r</code>, <code>--model</code>, <code>--live</code>), <code>agent install</code> (idempotent, <code>--force</code>), <code>agent list</code> (<code>--json</code>). Wired into <code>src/index.ts</code> as the 11th command.</p>
   </li>
 </ol>
 
