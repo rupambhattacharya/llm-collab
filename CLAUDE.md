@@ -898,7 +898,21 @@ All items implemented and tested:
 
 **Tested:** typecheck clean, server starts on port, client connects, all RPC methods work (shell.execute returns stdout, file.read returns content, agent.delegate returns queued status, rpc.methods lists all methods), client disconnect + server stop clean.
 
-### Phases 10–12 — NOT STARTED
+### Phase 10: Error Handling & Resilience — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Typed errors | `src/utils/errors.ts` | Done (Phase 1) — `LLMCollabError` base, `ConfigError`, `AuthError`, `APIError`, `MCPError`, `ChronicleError` with codes and hints |
+| Retry strategies | `src/utils/retry.ts` | Done — `withRetry()` via p-retry (exponential backoff), `AbortError` for non-retryable failures, `CircuitBreaker` class (threshold, reset timeout, closed/open/half-open states) |
+| Payload cleaning | `src/utils/payload.ts` | Done — `cleanPayload()` with configurable maxLength/maxArrayItems/maxDepth/stripFields, `summarizePayload()` for one-line summaries |
+
+**Dependencies added:** `p-retry`
+
+**Tested:** typecheck clean, retry succeeds after transient failures, AbortError stops retry immediately, circuit breaker trips after threshold failures and auto-resets, payload cleaning truncates arrays/strips fields/limits depth, summarize produces compact output.
+
+### Phases 11–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -961,7 +975,9 @@ src/
 │   └── relay-server.ts      # Express.js HTTP proxy with key injection
 └── utils/
     ├── errors.ts            # Typed error classes
-    └── logger.ts            # Structured logger
+    ├── logger.ts            # Structured logger
+    ├── payload.ts           # API response truncation and cleaning
+    └── retry.ts             # Exponential backoff and circuit breaker
 ```
 
 ## How to Resume Development
@@ -978,7 +994,7 @@ pnpm typecheck              # Should pass clean
 npx tsx src/index.ts --help  # Should show all 12 commands
 
 # Continue with remaining phases (see phase descriptions above)
-# Next up: Phase 10 (Error Handling & Resilience) — A2A protocol (Phase 9) is now complete.
+# Next up: Phase 11 (Testing) — Error Handling & Resilience (Phase 10) is now complete.
 ```
 
 ## Audit Log Format

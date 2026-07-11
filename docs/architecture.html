@@ -680,12 +680,20 @@
   </li>
 </ol>
 
-<h3>Phases 10&ndash;12: Resilience &amp; Distribution</h3>
+<h3>Phase 10: Error Handling &amp; Resilience <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 25;">
   <li class="build-step">
-    <h4>Error Handling &amp; Resilience</h4>
-    <p>Typed errors with exponential-backoff retries (<code>p-retry</code>) and circuit breakers for persistent failures. Graceful degradation when an integration is unavailable.</p>
+    <h4>Retry Strategies</h4>
+    <p><code>src/utils/retry.ts</code> &mdash; <code>withRetry()</code> wraps <code>p-retry</code> for exponential-backoff retries on transient failures, re-exports <code>AbortError</code> to stop retrying immediately on non-retryable errors, and a <code>CircuitBreaker</code> class with configurable failure threshold and reset timeout that tracks closed/open/half-open state.</p>
   </li>
+  <li class="build-step">
+    <h4>Payload Cleaning</h4>
+    <p><code>src/utils/payload.ts</code> &mdash; <code>cleanPayload()</code> truncates large API responses for LLM consumption with configurable <code>maxLength</code>, <code>maxArrayItems</code>, <code>maxDepth</code>, and field stripping; <code>summarizePayload()</code> produces a compact one-line summary of an object.</p>
+  </li>
+</ol>
+
+<h3>Phases 11&ndash;12: Testing &amp; Distribution</h3>
+<ol class="build-steps" style="counter-reset: step 27;">
   <li class="build-step">
     <h4>Testing</h4>
     <p>Vitest unit tests, MCP smoke tests, Chronicle integration tests, config hierarchy tests. Skills and agents arena benchmarking (LLM-as-judge).</p>
