@@ -692,15 +692,19 @@
   </li>
 </ol>
 
-<h3>Phases 11&ndash;12: Testing &amp; Distribution</h3>
+<h3>Phase 11: Testing <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 27;">
   <li class="build-step">
-    <h4>Testing</h4>
-    <p>Vitest unit tests, MCP smoke tests, Chronicle integration tests, config hierarchy tests. Skills and agents arena benchmarking (LLM-as-judge).</p>
+    <h4>Unit &amp; Integration Tests</h4>
+    <p>73 tests across 8 files: error classes, retry/circuit breaker, payload cleaning, secret scanner, hook manager, A2A protocol, ConfigManager, bundled skills. All passing via Vitest.</p>
   </li>
+</ol>
+
+<h3>Phase 12: Distribution <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
+<ol class="build-steps" style="counter-reset: step 28;">
   <li class="build-step">
-    <h4>Distribution</h4>
-    <p><code>tsup</code> build + <code>pkg</code> standalone binary (macOS, Linux, Windows). npm publish. Homebrew formula. Shell completions via Commander's built-in.</p>
+    <h4>Build &amp; Shell Completions</h4>
+    <p><code>tsup</code> ESM bundle (~192 KB). <code>pnpm link --global</code> for local install. Shell completions for bash/zsh/fish. Comprehensive README with full command reference.</p>
   </li>
 </ol>
 

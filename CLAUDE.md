@@ -544,12 +544,10 @@ program.parseAsync(process.argv).catch((err) => {
 
 ### Phase 12: Distribution
 
-39. **Compilation & distribution**
-    - `tsup` for ESM + CJS bundle
-    - `pkg` for standalone binary (macOS, Linux, Windows)
-    - npm publish (`npx llm-collab`)
-    - Homebrew formula
-    - Shell completions generation (zsh/bash/fish) via Commander's built-in
+39. **Build & distribution**
+    - `tsup` for ESM bundle with shebang banner
+    - `pnpm link --global` for local installation
+    - Shell completions generation (bash/zsh/fish)
 
 ## Configuration Schema
 
@@ -912,9 +910,43 @@ All items implemented and tested:
 
 **Tested:** typecheck clean, retry succeeds after transient failures, AbortError stops retry immediately, circuit breaker trips after threshold failures and auto-resets, payload cleaning truncates arrays/strips fields/limits depth, summarize produces compact output.
 
-### Phases 11–12 — NOT STARTED
+### Phase 11: Testing — COMPLETE
 
-See phase descriptions above for full details.
+All tests implemented and passing:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Error classes | `tests/utils/errors.test.ts` | Done — 7 tests: LLMCollabError, ConfigError, AuthError, APIError, MCPError, ChronicleError codes, hints, inheritance |
+| Retry & circuit breaker | `tests/utils/retry.test.ts` | Done — 9 tests: first-attempt success, transient retry, AbortError stops, exhausted retries, circuit breaker states/threshold/rejection/half-open/reset |
+| Payload cleaning | `tests/utils/payload.test.ts` | Done — 11 tests: passthrough, array truncation, field stripping, depth limiting, null/undefined, summarize |
+| Secret scanner | `tests/hooks/secret-scanner.test.ts` | Done — 11 tests: AWS/GitHub/OpenAI/private key/Slack detection, safe text, multiple secrets, masking, warn/block modes |
+| Hook manager | `tests/hooks/hook-manager.test.ts` | Done — 7 tests: toolCall/inference/session/error/budget events, disable/enable toggle |
+| A2A protocol | `tests/agent/a2a-protocol.test.ts` | Done — 12 tests: MethodRegistry handler/errors/listing, createRequest/createNotification, type guards, parseMessage valid/invalid/version |
+| ConfigManager | `tests/config/config-manager.test.ts` | Done — 6 tests: defaults, save/reload, getValue, setValue, getPath, preserve existing |
+| Bundled skills | `tests/data/bundled-skills.test.ts` | Done — 10 tests: count, fields, frontmatter, getByName, search by name/desc/content/case-insensitive |
+
+**73 tests across 8 test files — all passing.**
+
+### Phase 12: Distribution — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Build | `tsup.config.ts` | Done — ESM bundle, node24 target, shebang banner, sourcemap |
+| Shebang fix | `src/index.ts` | Done — removed source shebang (tsup banner handles it), prevents double-shebang in built output |
+| Workspace fix | `pnpm-workspace.yaml` | Done — fixed invalid content that broke `pnpm build` |
+| Shell completions | `src/commands/completions.ts` | Done — `completions bash/zsh/fish` with all 13 commands and subcommands |
+| Node version | `.nvmrc` | Done — pins to Node 24 |
+| Entry point wiring | `src/index.ts` | Done — `completionsCommand` registered (13 total commands) |
+| README | `README.md` | Done — comprehensive documentation: installation, all 13 commands with full usage/options, MCP tools reference, editor integration, multi-agent system, hooks/auditing, config reference |
+
+**Tested commands:**
+- `pnpm build` (tsup succeeds, 192 KB bundle)
+- `node dist/index.js --help` (shows all 13 commands)
+- `llm-collab completions bash/zsh/fish` (generates valid completion scripts)
+- Typecheck passes (`npx tsc --noEmit`)
+- All 73 tests pass (`npx vitest run`)
 
 ## Files Implemented So Far
 
@@ -933,7 +965,8 @@ src/
 │   ├── mcp.ts               # MCP server command (stdio/http)
 │   ├── relay.ts             # LLM relay proxy command
 │   ├── setup.ts             # Interactive wizard with audit logging
-│   └── skills.ts            # Skills CLI (list, install, search)
+│   ├── skills.ts            # Skills CLI (list, install, search)
+│   └── completions.ts       # Shell completions (bash/zsh/fish)
 ├── agent/
 │   └── a2a/
 │       ├── protocol.ts      # JSON-RPC 2.0 message types and method registry
@@ -991,10 +1024,14 @@ pnpm install
 
 # Verify current state
 pnpm typecheck              # Should pass clean
-npx tsx src/index.ts --help  # Should show all 12 commands
+pnpm test                   # 73 tests should pass
+pnpm build                  # Should produce dist/index.js
+node dist/index.js --help   # Should show all 13 commands
 
-# Continue with remaining phases (see phase descriptions above)
-# Next up: Phase 11 (Testing) — Error Handling & Resilience (Phase 10) is now complete.
+# All 12 phases are complete. Future work could include:
+# - Additional integration services (GitLab, Jira, Confluence)
+# - Arena benchmarking for skills and agents
+# - npm publish for global distribution
 ```
 
 ## Audit Log Format

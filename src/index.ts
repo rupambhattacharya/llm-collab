@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { Command } from "commander";
 import chalk from "chalk";
 import { configCommand } from "./commands/config-cmd.js";
@@ -14,6 +12,7 @@ import { linearCommand } from "./commands/linear.js";
 import { chronicleCommand } from "./commands/chronicle.js";
 import { agentCommand } from "./commands/agent.js";
 import { skillsCommand } from "./commands/skills.js";
+import { completionsCommand } from "./commands/completions.js";
 import { LLMCollabError } from "./utils/errors.js";
 import { logger } from "./utils/logger.js";
 import { audit } from "./hooks/audit-logger.js";
@@ -66,6 +65,7 @@ program.addCommand(linearCommand);
 program.addCommand(chronicleCommand);
 program.addCommand(agentCommand);
 program.addCommand(skillsCommand);
+program.addCommand(completionsCommand);
 
 program.parseAsync(process.argv).then(() => {
   hooks.emitSessionEnd({ sessionId: audit.getSessionId(), durationMs: Date.now() - sessionStart, result: "success" });
