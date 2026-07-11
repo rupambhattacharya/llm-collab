@@ -13,6 +13,7 @@ import { githubCommand } from "./commands/github.js";
 import { linearCommand } from "./commands/linear.js";
 import { chronicleCommand } from "./commands/chronicle.js";
 import { agentCommand } from "./commands/agent.js";
+import { skillsCommand } from "./commands/skills.js";
 import { LLMCollabError } from "./utils/errors.js";
 import { logger } from "./utils/logger.js";
 import { audit } from "./hooks/audit-logger.js";
@@ -47,6 +48,7 @@ program.addCommand(githubCommand);
 program.addCommand(linearCommand);
 program.addCommand(chronicleCommand);
 program.addCommand(agentCommand);
+program.addCommand(skillsCommand);
 
 program.parseAsync(process.argv).then(() => {
   audit.sessionEnd(Date.now() - sessionStart);

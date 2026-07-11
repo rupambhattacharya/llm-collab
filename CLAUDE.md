@@ -847,7 +847,28 @@ All items implemented and tested:
 - `llm-collab agent list` / `agent list --json`
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phases 7–12 — NOT STARTED
+### Phase 7: Skills System — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Bundled skills | `src/data/bundled-skills.ts` | Done — `BundledSkill` interface, 3 skills (code-review, chronicle-capture, cost-report) as TS strings, `getSkillByName()`, `searchSkills()` |
+| Skills CLI | `src/commands/skills.ts` | Done — `skills list` (--json), `skills install [name]` (--force, single or all), `skills search <query>` |
+| Setup wizard integration | `src/commands/setup.ts` | Done — prompts for domain agent + skills install after config save |
+| Entry point wiring | `src/index.ts` | Done — `skillsCommand` registered (12 total commands) |
+
+**Dependencies added:** none — reuses existing `gray-matter` infra
+
+**Tested commands:**
+- `llm-collab --help` (shows all 12 commands)
+- `llm-collab skills list` / `skills list --json`
+- `llm-collab skills install code-review` (single install)
+- `llm-collab skills install` (all bundled, idempotent)
+- `llm-collab skills search "review"` / `skills search "chronicle"`
+- Typecheck passes (`npx tsc --noEmit`)
+
+### Phases 8–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -867,7 +888,8 @@ src/
 │   ├── linear.ts            # Linear CLI (issues, teams, projects)
 │   ├── mcp.ts               # MCP server command (stdio/http)
 │   ├── relay.ts             # LLM relay proxy command
-│   └── setup.ts             # Interactive wizard with audit logging
+│   ├── setup.ts             # Interactive wizard with audit logging
+│   └── skills.ts            # Skills CLI (list, install, search)
 ├── chronicle/
 │   ├── embeddings.ts        # Vector embedding generation (Vercel AI SDK)
 │   ├── graph.ts             # Knowledge graph (entities, relations, traversal)
@@ -879,6 +901,7 @@ src/
 │   ├── schemas.ts           # Zod schemas for all config
 │   └── sub-agents.ts        # Domain agent definitions (github/linear/chronicle-expert)
 ├── data/
+│   ├── bundled-skills.ts    # Bundled skills as TS strings (code-review, chronicle-capture, cost-report)
 │   └── llm-costs.ts         # Model pricing data
 ├── hooks/
 │   └── audit-logger.ts      # JSONL audit logger singleton
@@ -913,14 +936,11 @@ pnpm install
 
 # Verify current state
 pnpm typecheck              # Should pass clean
-npx tsx src/index.ts --help  # Should show all 11 commands
+npx tsx src/index.ts --help  # Should show all 12 commands
 
-# Start Phase 7 (Skills System)
-# 1. Create src/data/bundled-skills.ts — skill markdown embedded as TS strings
-# 2. Create src/commands/skills.ts — skills list/install/search
-# 3. Wire skill installation into setup wizard (installs to ~/.claude/skills/, idempotent)
-# 4. Wire into src/index.ts
-# 5. Test: llm-collab skills list
+# Continue with remaining phases (see phase descriptions above)
+# Next up: Phase 10 (Hooks & Auditing) — audit logger already exists;
+# hook-manager, cost-hook, secret-scanner, and webhook notifications are not done yet.
 ```
 
 ## Audit Log Format

@@ -3,8 +3,13 @@ import { input, select, confirm } from "@inquirer/prompts";
 import chalk from "chalk";
 import { ConfigManager } from "../config/config-manager.js";
 import { configSchema, type Config } from "../config/schemas.js";
+import { AgentService } from "../services/agent-service.js";
+import { BUNDLED_SKILLS } from "../data/bundled-skills.js";
 import { logger } from "../utils/logger.js";
 import { audit } from "../hooks/audit-logger.js";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
 
 export const setupCommand = new Command("setup")
   .description("Interactive configuration wizard")
@@ -128,11 +133,55 @@ export const setupCommand = new Command("setup")
     logger.passThrough("");
     logger.passThrough(chalk.green("Configuration saved!"));
     logger.passThrough(chalk.dim(`  File: ${cm.getPath()}`));
+
+    const wantAgents = await confirm({
+      message: "Install domain-expert sub-agents to ~/.claude/agents/?",
+      default: true,
+    });
+    if (wantAgents) {
+      const agentResult = AgentService.installDomainAgents();
+      if (agentResult.installed.length > 0) {
+        logger.passThrough(chalk.green(`  Installed ${agentResult.installed.length} agent(s): ${agentResult.installed.join(", ")}`));
+      }
+      if (agentResult.skipped.length > 0) {
+        logger.passThrough(chalk.dim(`  Skipped ${agentResult.skipped.length} (already exist): ${agentResult.skipped.join(", ")}`));
+      }
+    }
+
+    const wantSkills = await confirm({
+      message: "Install bundled skills to ~/.claude/skills/?",
+      default: true,
+    });
+    if (wantSkills) {
+      const skillsDir = path.join(os.homedir(), ".claude", "skills");
+      if (!fs.existsSync(skillsDir)) {
+        fs.mkdirSync(skillsDir, { recursive: true });
+      }
+      let installedCount = 0;
+      let skippedCount = 0;
+      for (const skill of BUNDLED_SKILLS) {
+        const filePath = path.join(skillsDir, skill.filename);
+        if (fs.existsSync(filePath)) {
+          skippedCount++;
+          continue;
+        }
+        fs.writeFileSync(filePath, skill.content, "utf-8");
+        installedCount++;
+      }
+      if (installedCount > 0) {
+        logger.passThrough(chalk.green(`  Installed ${installedCount} skill(s)`));
+      }
+      if (skippedCount > 0) {
+        logger.passThrough(chalk.dim(`  Skipped ${skippedCount} (already exist)`));
+      }
+    }
+
     logger.passThrough("");
     logger.passThrough("Next steps:");
     logger.passThrough(`  ${chalk.cyan("llm-collab agent claude")}  Launch Claude Code with MCP`);
     logger.passThrough(`  ${chalk.cyan("llm-collab chat")}          Start an AI chat`);
     logger.passThrough(`  ${chalk.cyan("llm-collab config list")}   View your config`);
+    logger.passThrough(`  ${chalk.cyan("llm-collab skills list")}   View installed skills`);
     logger.passThrough("");
   });
 

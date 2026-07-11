@@ -636,15 +636,27 @@
   </li>
 </ol>
 
-<h3>Phase 7: Polish</h3>
+<h3>Phase 7: Skills System <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 17;">
   <li class="build-step">
-    <h4>Skills System</h4>
-    <p>Bundled markdown skills with YAML frontmatter (parsed via gray-matter). Install to <code>~/.claude/skills/</code>. Idempotent &mdash; never overwrites user edits.</p>
+    <h4>Bundled Skills</h4>
+    <p><code>src/data/bundled-skills.ts</code> &mdash; <code>BundledSkill</code> interface and 3 skills (code-review, chronicle-capture, cost-report) embedded as TS strings with YAML frontmatter. <code>getSkillByName()</code> and <code>searchSkills()</code> helpers.</p>
   </li>
   <li class="build-step">
+    <h4>Skills CLI</h4>
+    <p><code>src/commands/skills.ts</code> &mdash; <code>skills list</code> (<code>--json</code>), <code>skills install [name]</code> (single skill or all bundled, <code>--force</code>), <code>skills search &lt;query&gt;</code>. Installs to <code>~/.claude/skills/</code>, idempotent &mdash; never overwrites user edits. Wired into <code>src/index.ts</code> as the 12th command.</p>
+  </li>
+  <li class="build-step">
+    <h4>Setup Wizard Integration</h4>
+    <p><code>src/commands/setup.ts</code> &mdash; prompts to install domain agents and bundled skills after config save.</p>
+  </li>
+</ol>
+
+<h3>Phases 8&ndash;12: Hooks, Auditing, A2A, Resilience, Distribution</h3>
+<ol class="build-steps" style="counter-reset: step 20;">
+  <li class="build-step">
     <h4>Hooks, Auditing, Distribution</h4>
-    <p>EventEmitter hook system. JSONL audit trail. Secret scanner. Webhook notifications. <code>tsup</code> build + <code>pkg</code> binary. npm publish. Homebrew formula. Shell completions via Commander.</p>
+    <p>EventEmitter hook system. JSONL audit trail (already implemented in Phase 1). Secret scanner. Webhook notifications. <code>tsup</code> build + <code>pkg</code> binary. npm publish. Homebrew formula. Shell completions via Commander.</p>
   </li>
 </ol>
 
