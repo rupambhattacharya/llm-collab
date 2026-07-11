@@ -465,86 +465,86 @@ program.parseAsync(process.argv).catch((err) => {
     - `llm-collab skills install <name>` — install a skill
     - `llm-collab skills search <query>` — find skills
 
-### Phase 10: Hooks & Auditing
+### Phase 8: Hooks & Auditing
 
 **Goal:** Comprehensive auditing, cost tracking, and lifecycle hooks.
 
-35. **Hook system**
+26. **Hook system**
     - `HookManager` — EventEmitter-based lifecycle hooks
     - Hook types: `onToolCall`, `onInference`, `onSessionStart`, `onSessionEnd`, `onError`
     - Hooks receive context (tool name, tokens, cost, duration)
 
-36. **Audit hook**
+27. **Audit hook**
     - Log every tool execution with timestamp, tool, input summary, result status
     - Stored in `~/.llm-collab/audit/` as JSONL files (one per day)
     - `llm-collab audit` command to query
 
-37. **Cost hook**
+28. **Cost hook**
     - Track token usage per model, per session, per tool
     - Configurable budget alerts
     - `llm-collab costs --today` / `--this-week` / `--by-model`
 
-38. **Secret scanner**
+29. **Secret scanner**
     - Regex patterns for common credential formats (AWS keys, tokens, passwords)
     - Runs on agent outputs before display/commit
     - Configurable: warn or block
 
-39. **Webhook notifications**
+30. **Webhook notifications**
     - Slack, Discord, generic webhook (via `node-fetch`)
     - Events: session_start, session_complete, session_failed, budget_alert
     - Configurable in config.json
 
-### Phase 11: A2A Protocol (Agent-to-Agent)
+### Phase 9: A2A Protocol (Agent-to-Agent)
 
 **Goal:** Agents can delegate to other agents via structured protocol.
 
-40. **A2A server**
+31. **A2A server**
     - JSON-RPC 2.0 over WebSocket (`ws` package)
     - Methods: `shell.execute`, `file.read`, `file.write`, `agent.delegate`
     - Optional TLS
 
-41. **A2A client**
+32. **A2A client**
     - Connect to running agents
     - Send commands, stream results
 
-### Phase 12: Error Handling & Resilience
+### Phase 10: Error Handling & Resilience
 
 **Goal:** Graceful degradation, retries, and clear error reporting.
 
-42. **Typed errors**
+33. **Typed errors**
     - `ConfigError`, `AuthError`, `APIError`, `MCPError`, `ChronicleError`
     - Each carries: message, code, actionable hint
     - All extend a base `LLMCollabError` class
 
-43. **Retry strategies**
+34. **Retry strategies**
     - Exponential backoff for transient API failures (via `p-retry`)
     - Circuit breaker for persistent failures
     - Graceful degradation: if GitHub is down, other tools still work
 
-44. **Payload cleaning**
+35. **Payload cleaning**
     - Truncate large API responses for LLM consumption
     - Strip unnecessary fields
     - Configurable max payload size
 
-### Phase 13: Testing
+### Phase 11: Testing
 
-45. **Unit tests**
+36. **Unit tests**
     - Vitest with describe/it/beforeEach
     - Mocks for external APIs (msw for HTTP mocking)
     - Snapshot tests for CLI output
 
-46. **Integration tests**
+37. **Integration tests**
     - MCP smoke tests: verify tool registration
     - Chronicle tests: write -> search -> verify
     - Config tests: hierarchy resolution
 
-47. **Arena benchmarking**
+38. **Arena benchmarking**
     - Skills arena: LLM-as-judge scoring
     - Agents arena: scenario-based evaluation
 
-### Phase 14: Distribution
+### Phase 12: Distribution
 
-48. **Compilation & distribution**
+39. **Compilation & distribution**
     - `tsup` for ESM + CJS bundle
     - `pkg` for standalone binary (macOS, Linux, Windows)
     - npm publish (`npx llm-collab`)
@@ -868,7 +868,23 @@ All items implemented and tested:
 - `llm-collab skills search "review"` / `skills search "chronicle"`
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phases 8–12 — NOT STARTED
+### Phase 8: Hooks & Auditing — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Hook manager | `src/hooks/hook-manager.ts` | Done — EventEmitter-based lifecycle hooks: `onToolCall`, `onInference`, `onSessionStart`, `onSessionEnd`, `onError`, `onBudgetAlert`. Typed contexts, enable/disable toggle |
+| Cost hook | `src/hooks/cost-hook.ts` | Done — registers on inference events, tracks session spend, fires budget alerts when threshold exceeded |
+| Secret scanner | `src/hooks/secret-scanner.ts` | Done — regex patterns for AWS keys, GitHub tokens, API keys, private keys, generic secrets. Warn or block modes, excerpt masking |
+| Webhook notifications | `src/hooks/webhook.ts` | Done — sends events to Slack/Discord/generic webhook URLs. Auto-detects Slack format. Supports session_start, session_complete, session_failed, error, budget_alert events |
+| Entry point wiring | `src/index.ts` | Done — initializes cost hook + webhooks from config, emits session start/end/error events |
+
+**Dependencies added:** none
+
+**Tested:** typecheck clean, hook events fire correctly, secret scanner detects AWS/GitHub/OpenAI keys/private keys, disable toggle works, CLI commands still function with hooks active.
+
+### Phases 9–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -904,7 +920,11 @@ src/
 │   ├── bundled-skills.ts    # Bundled skills as TS strings (code-review, chronicle-capture, cost-report)
 │   └── llm-costs.ts         # Model pricing data
 ├── hooks/
-│   └── audit-logger.ts      # JSONL audit logger singleton
+│   ├── audit-logger.ts      # JSONL audit logger singleton
+│   ├── cost-hook.ts         # Inference cost tracking + budget alerts
+│   ├── hook-manager.ts      # EventEmitter lifecycle hooks
+│   ├── secret-scanner.ts    # Credential detection in output
+│   └── webhook.ts           # Slack/Discord/generic webhook notifications
 ├── mcp/
 │   ├── server.ts            # MCP server builder with capability gating
 │   └── tools/
@@ -939,8 +959,7 @@ pnpm typecheck              # Should pass clean
 npx tsx src/index.ts --help  # Should show all 12 commands
 
 # Continue with remaining phases (see phase descriptions above)
-# Next up: Phase 10 (Hooks & Auditing) — audit logger already exists;
-# hook-manager, cost-hook, secret-scanner, and webhook notifications are not done yet.
+# Next up: Phase 9 (A2A Protocol) — hooks & auditing (Phase 8) are now complete.
 ```
 
 ## Audit Log Format

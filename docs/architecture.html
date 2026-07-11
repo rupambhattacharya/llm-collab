@@ -542,7 +542,7 @@
 <!-- TAB: Build From Scratch -->
 <div class="tab-content" id="tab-build">
 <h2>How to Build This From Scratch</h2>
-<p>14 phases, ordered by dependency. Each phase produces a usable increment.</p>
+<p>12 phases, ordered by dependency. Each phase produces a usable increment.</p>
 
 <h3>Phase 1: Foundation <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps">
@@ -652,11 +652,23 @@
   </li>
 </ol>
 
-<h3>Phases 8&ndash;12: Hooks, Auditing, A2A, Resilience, Distribution</h3>
+<h3>Phase 8: Hooks &amp; Auditing <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 20;">
   <li class="build-step">
-    <h4>Hooks, Auditing, Distribution</h4>
-    <p>EventEmitter hook system. JSONL audit trail (already implemented in Phase 1). Secret scanner. Webhook notifications. <code>tsup</code> build + <code>pkg</code> binary. npm publish. Homebrew formula. Shell completions via Commander.</p>
+    <h4>Hook Manager + Cost Hook</h4>
+    <p><code>src/hooks/hook-manager.ts</code> &mdash; EventEmitter-based lifecycle hooks: <code>onToolCall</code>, <code>onInference</code>, <code>onSessionStart</code>, <code>onSessionEnd</code>, <code>onError</code>, <code>onBudgetAlert</code>. Typed contexts, enable/disable toggle. <code>src/hooks/cost-hook.ts</code> registers on inference events, tracks session spend, and fires budget alerts when a threshold is exceeded.</p>
+  </li>
+  <li class="build-step">
+    <h4>Secret Scanner + Webhooks</h4>
+    <p><code>src/hooks/secret-scanner.ts</code> &mdash; regex patterns for AWS keys, GitHub tokens, API keys, private keys, and generic secrets, with warn or block modes and excerpt masking. <code>src/hooks/webhook.ts</code> &mdash; sends session_start, session_complete, session_failed, error, and budget_alert events to Slack, Discord, or a generic webhook URL (auto-detects Slack format). Wired into <code>src/index.ts</code>, which initializes the cost hook and webhooks from config and emits session start/end/error events.</p>
+  </li>
+</ol>
+
+<h3>Phases 9&ndash;12: A2A, Resilience, Distribution</h3>
+<ol class="build-steps" style="counter-reset: step 22;">
+  <li class="build-step">
+    <h4>A2A, Resilience, Distribution</h4>
+    <p>JSON-RPC 2.0 over WebSocket for agent-to-agent delegation. Typed errors with exponential-backoff retries and circuit breakers for resilience. <code>tsup</code> build + <code>pkg</code> binary. npm publish. Homebrew formula. Shell completions via Commander.</p>
   </li>
 </ol>
 

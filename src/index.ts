@@ -17,6 +17,10 @@ import { skillsCommand } from "./commands/skills.js";
 import { LLMCollabError } from "./utils/errors.js";
 import { logger } from "./utils/logger.js";
 import { audit } from "./hooks/audit-logger.js";
+import { hooks } from "./hooks/hook-manager.js";
+import { registerCostHook } from "./hooks/cost-hook.js";
+import { registerWebhooks } from "./hooks/webhook.js";
+import { ConfigManager } from "./config/config-manager.js";
 
 const sessionStart = Date.now();
 
@@ -37,6 +41,19 @@ const program = new Command()
 
 audit.sessionStart({ argv: process.argv.slice(2) });
 
+try {
+  const config = ConfigManager.load().get();
+  if (config.hooks.costs.enabled) {
+    registerCostHook(config.hooks.costs.budget_alert_usd);
+  }
+  if (config.hooks.webhooks.length > 0) {
+    registerWebhooks(config.hooks.webhooks);
+  }
+  hooks.emitSessionStart({ sessionId: audit.getSessionId(), argv: process.argv.slice(2) });
+} catch {
+  // Config may not exist yet (first run); hooks init is best-effort
+}
+
 program.addCommand(configCommand);
 program.addCommand(setupCommand);
 program.addCommand(auditCommand);
@@ -51,8 +68,11 @@ program.addCommand(agentCommand);
 program.addCommand(skillsCommand);
 
 program.parseAsync(process.argv).then(() => {
+  hooks.emitSessionEnd({ sessionId: audit.getSessionId(), durationMs: Date.now() - sessionStart, result: "success" });
   audit.sessionEnd(Date.now() - sessionStart);
 }).catch((err: unknown) => {
+  hooks.emitError({ error: err instanceof Error ? err : String(err), context: "top-level" });
+  hooks.emitSessionEnd({ sessionId: audit.getSessionId(), durationMs: Date.now() - sessionStart, result: "failure" });
   audit.logError(err, "top-level");
   audit.sessionEnd(Date.now() - sessionStart, { result: "failure" });
 
