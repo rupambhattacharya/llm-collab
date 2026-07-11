@@ -664,11 +664,35 @@
   </li>
 </ol>
 
-<h3>Phases 9&ndash;12: A2A, Resilience, Distribution</h3>
+<h3>Phase 9: A2A Protocol <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 22;">
   <li class="build-step">
-    <h4>A2A, Resilience, Distribution</h4>
-    <p>JSON-RPC 2.0 over WebSocket for agent-to-agent delegation. Typed errors with exponential-backoff retries and circuit breakers for resilience. <code>tsup</code> build + <code>pkg</code> binary. npm publish. Homebrew formula. Shell completions via Commander.</p>
+    <h4>Protocol Types</h4>
+    <p><code>src/agent/a2a/protocol.ts</code> &mdash; JSON-RPC 2.0 message types (<code>JsonRpcRequest</code>, <code>JsonRpcResponse</code>, <code>JsonRpcNotification</code>), <code>MethodRegistry</code> class for handler registration, helper functions (<code>createRequest</code>, <code>parseMessage</code>, <code>isRequest</code>, <code>isResponse</code>, <code>isNotification</code>).</p>
+  </li>
+  <li class="build-step">
+    <h4>WebSocket Server</h4>
+    <p><code>src/agent/a2a/server.ts</code> &mdash; <code>A2AServer</code> class built on the <code>ws</code> package with built-in methods (<code>shell.execute</code>, <code>file.read</code>, <code>file.write</code>, <code>agent.delegate</code>, <code>rpc.methods</code>), client tracking, broadcast, and audit logging.</p>
+  </li>
+  <li class="build-step">
+    <h4>WebSocket Client</h4>
+    <p><code>src/agent/a2a/client.ts</code> &mdash; <code>A2AClient</code> class: WebSocket client, promise-based RPC calls with timeout, notification handlers, and typed convenience methods (<code>shellExecute</code>, <code>fileRead</code>, <code>fileWrite</code>, <code>delegate</code>, <code>listMethods</code>).</p>
+  </li>
+</ol>
+
+<h3>Phases 10&ndash;12: Resilience &amp; Distribution</h3>
+<ol class="build-steps" style="counter-reset: step 25;">
+  <li class="build-step">
+    <h4>Error Handling &amp; Resilience</h4>
+    <p>Typed errors with exponential-backoff retries (<code>p-retry</code>) and circuit breakers for persistent failures. Graceful degradation when an integration is unavailable.</p>
+  </li>
+  <li class="build-step">
+    <h4>Testing</h4>
+    <p>Vitest unit tests, MCP smoke tests, Chronicle integration tests, config hierarchy tests. Skills and agents arena benchmarking (LLM-as-judge).</p>
+  </li>
+  <li class="build-step">
+    <h4>Distribution</h4>
+    <p><code>tsup</code> build + <code>pkg</code> standalone binary (macOS, Linux, Windows). npm publish. Homebrew formula. Shell completions via Commander's built-in.</p>
   </li>
 </ol>
 

@@ -884,7 +884,21 @@ All items implemented and tested:
 
 **Tested:** typecheck clean, hook events fire correctly, secret scanner detects AWS/GitHub/OpenAI keys/private keys, disable toggle works, CLI commands still function with hooks active.
 
-### Phases 9–12 — NOT STARTED
+### Phase 9: A2A Protocol — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| A2A protocol | `src/agent/a2a/protocol.ts` | Done — JSON-RPC 2.0 message types, `MethodRegistry` for handler registration, parse/create helpers |
+| A2A server | `src/agent/a2a/server.ts` | Done — WebSocket server via `ws`, built-in methods (`shell.execute`, `file.read`, `file.write`, `agent.delegate`, `rpc.methods`), client tracking, broadcast, audit logging |
+| A2A client | `src/agent/a2a/client.ts` | Done — WebSocket client, promise-based RPC with timeout, notification handlers, typed convenience methods |
+
+**Dependencies added:** `ws`, `@types/ws`
+
+**Tested:** typecheck clean, server starts on port, client connects, all RPC methods work (shell.execute returns stdout, file.read returns content, agent.delegate returns queued status, rpc.methods lists all methods), client disconnect + server stop clean.
+
+### Phases 10–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -906,6 +920,11 @@ src/
 │   ├── relay.ts             # LLM relay proxy command
 │   ├── setup.ts             # Interactive wizard with audit logging
 │   └── skills.ts            # Skills CLI (list, install, search)
+├── agent/
+│   └── a2a/
+│       ├── protocol.ts      # JSON-RPC 2.0 message types and method registry
+│       ├── server.ts        # WebSocket A2A server
+│       └── client.ts        # WebSocket A2A client
 ├── chronicle/
 │   ├── embeddings.ts        # Vector embedding generation (Vercel AI SDK)
 │   ├── graph.ts             # Knowledge graph (entities, relations, traversal)
@@ -959,7 +978,7 @@ pnpm typecheck              # Should pass clean
 npx tsx src/index.ts --help  # Should show all 12 commands
 
 # Continue with remaining phases (see phase descriptions above)
-# Next up: Phase 9 (A2A Protocol) — hooks & auditing (Phase 8) are now complete.
+# Next up: Phase 10 (Error Handling & Resilience) — A2A protocol (Phase 9) is now complete.
 ```
 
 ## Audit Log Format
