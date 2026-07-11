@@ -544,7 +544,7 @@
 <h2>How to Build This From Scratch</h2>
 <p>14 phases, ordered by dependency. Each phase produces a usable increment.</p>
 
-<h3>Phase 1: Foundation</h3>
+<h3>Phase 1: Foundation <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps">
   <li class="build-step">
     <h4>Initialize Node.js Project</h4>
@@ -564,7 +564,7 @@
   </li>
 </ol>
 
-<h3>Phase 2: LLM Integration</h3>
+<h3>Phase 2: LLM Integration <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 4;">
   <li class="build-step">
     <h4>AI Service Abstraction</h4>
@@ -580,7 +580,7 @@
   </li>
 </ol>
 
-<h3>Phase 3: MCP Server</h3>
+<h3>Phase 3: MCP Server <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 7;">
   <li class="build-step">
     <h4>MCP Core + Tool Registry</h4>
@@ -596,15 +596,15 @@
   </li>
 </ol>
 
-<h3>Phase 4: Integrations</h3>
+<h3>Phase 4: Integrations <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 10;">
   <li class="build-step">
     <h4>GitHub Service + MCP Tools</h4>
-    <p>Octokit for REST + GraphQL. Issues, PRs, search, CI status. MCP tools: <code>github_get_issue</code>, <code>github_search</code>, <code>github_create_pr</code>.</p>
+    <p>Octokit REST + GraphQL via <code>@octokit/rest</code> and <code>@octokit/graphql</code>. 10 MCP tools: <code>github_get_issue</code>, <code>github_search_issues</code>, <code>github_list_issues</code>, <code>github_create_issue</code>, <code>github_get_pr</code>, <code>github_list_prs</code>, <code>github_create_pr</code>, <code>github_ci_status</code>, <code>github_get_repo</code>, <code>github_add_comment</code>. CLI: <code>github issues list/get/search/create</code>, <code>github prs list/get</code>, <code>github ci</code>.</p>
   </li>
   <li class="build-step">
-    <h4>Linear + Additional Integrations</h4>
-    <p>Linear (<code>@linear/sdk</code>), GitLab (<code>@gitbeaker/rest</code>), Jira (<code>jira.js</code>). Each: service class + MCP tools + capability gate. All optional.</p>
+    <h4>Linear Service + MCP Tools</h4>
+    <p><code>@linear/sdk</code> GraphQL client. 7 MCP tools: <code>linear_get_issue</code>, <code>linear_search_issues</code>, <code>linear_list_issues</code>, <code>linear_create_issue</code>, <code>linear_update_issue</code>, <code>linear_list_teams</code>, <code>linear_list_projects</code>. CLI: <code>linear issues list/get/search/create</code>, <code>linear teams</code>, <code>linear projects</code>. Capability gating: tools only registered when integration is configured.</p>
   </li>
 </ol>
 

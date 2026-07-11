@@ -254,8 +254,8 @@ Tools are organized by domain and only registered when the integration is config
 | File | `file_read`, `file_write`, `file_list`, `file_search` | Always available |
 | System | `shell_execute`, `env_get`, `system_info` | Always available |
 | Chronicle | `chronicle_search`, `chronicle_read`, `chronicle_write`, `chronicle_ask` | Chronicle initialized |
-| GitHub | `github_get_issue`, `github_search`, `github_create_pr`, ... | `github.token` |
-| Linear | `linear_get_issue`, `linear_search`, `linear_create_issue`, ... | `linear.api_key` |
+| GitHub | `github_get_issue`, `github_search_issues`, `github_list_issues`, `github_create_issue`, `github_get_pr`, `github_list_prs`, `github_create_pr`, `github_ci_status`, `github_get_repo`, `github_add_comment` | `github.token` |
+| Linear | `linear_get_issue`, `linear_search_issues`, `linear_list_issues`, `linear_create_issue`, `linear_update_issue`, `linear_list_teams`, `linear_list_projects` | `linear.api_key` |
 
 ## Skills
 
