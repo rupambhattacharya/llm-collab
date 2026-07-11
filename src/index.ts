@@ -11,6 +11,7 @@ import { costsCommand } from "./commands/costs.js";
 import { mcpCommand } from "./commands/mcp.js";
 import { githubCommand } from "./commands/github.js";
 import { linearCommand } from "./commands/linear.js";
+import { chronicleCommand } from "./commands/chronicle.js";
 import { LLMCollabError } from "./utils/errors.js";
 import { logger } from "./utils/logger.js";
 import { audit } from "./hooks/audit-logger.js";
@@ -43,6 +44,7 @@ program.addCommand(costsCommand);
 program.addCommand(mcpCommand);
 program.addCommand(githubCommand);
 program.addCommand(linearCommand);
+program.addCommand(chronicleCommand);
 
 program.parseAsync(process.argv).then(() => {
   audit.sessionEnd(Date.now() - sessionStart);

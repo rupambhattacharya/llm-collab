@@ -4,6 +4,8 @@ import { registerFileTools } from "./tools/file-tools.js";
 import { registerSystemTools } from "./tools/system-tools.js";
 import { registerGitHubTools } from "./tools/github-tools.js";
 import { registerLinearTools } from "./tools/linear-tools.js";
+import { registerChronicleTools } from "./tools/chronicle-tools.js";
+import { ChronicleStore } from "../chronicle/store.js";
 import { logger } from "../utils/logger.js";
 
 export function buildMcpServer(config: Config): McpServer {
@@ -26,6 +28,11 @@ export function buildMcpServer(config: Config): McpServer {
   if (config.integrations.linear) {
     registerLinearTools(server, config.integrations.linear);
     logger.debug("Registered Linear tools: linear_get_issue, linear_search_issues, linear_list_issues, linear_create_issue, linear_update_issue, linear_list_teams, linear_list_projects");
+  }
+
+  if (ChronicleStore.isInitialized()) {
+    registerChronicleTools(server, config);
+    logger.debug("Registered Chronicle tools: chronicle_search, chronicle_read, chronicle_write, chronicle_ask, chronicle_graph, chronicle_timeline, chronicle_entity, chronicle_stats");
   }
 
   return server;

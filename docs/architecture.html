@@ -608,15 +608,15 @@
   </li>
 </ol>
 
-<h3>Phase 5: Chronicle</h3>
+<h3>Phase 5: Chronicle <span class="tech-badge" style="color: var(--green);">COMPLETE</span></h3>
 <ol class="build-steps" style="counter-reset: step 12;">
   <li class="build-step">
     <h4>SQLite Store + Embeddings</h4>
-    <p>Per-project <code>better-sqlite3</code> database. Items, entities, relations, timeline tables. FTS5 for full-text search. Embedding generation via LLM provider or Ollama.</p>
+    <p>Per-project <code>better-sqlite3</code> database at <code>~/.llm-collab/chronicle/&lt;hash&gt;/chronicle.db</code>. Items, entities, relations, timeline tables. FTS5 full-text search. WAL mode. Cosine similarity vector search. Embedding generation via Vercel AI SDK (OpenAI/Ollama providers).</p>
   </li>
   <li class="build-step">
     <h4>Knowledge Graph + NL Query</h4>
-    <p>Entity extraction from text. Relationship mapping. Graph traversal queries. RAG-based NL Q&amp;A with citations.</p>
+    <p>Entity types: file, function, decision, person, issue, concept. Relation types: depends_on, authored_by, decided_in, blocks, implements, related_to. Graph traversal with depth control. RAG-based NL Q&amp;A with citations via <code>QueryEngine</code>. 8 MCP tools: <code>chronicle_search</code>, <code>chronicle_read</code>, <code>chronicle_write</code>, <code>chronicle_ask</code>, <code>chronicle_graph</code>, <code>chronicle_timeline</code>, <code>chronicle_entity</code>, <code>chronicle_stats</code>. CLI: <code>chronicle init/push/search/ask/graph/timeline/stats</code>.</p>
   </li>
 </ol>
 

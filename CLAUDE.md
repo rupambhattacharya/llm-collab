@@ -800,7 +800,34 @@ All items implemented and tested:
 - `llm-collab linear issues list` (graceful error when unconfigured)
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phases 5–12 — NOT STARTED
+### Phase 5: Chronicle (Knowledge System) — COMPLETE
+
+All items implemented and tested:
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Chronicle store | `src/chronicle/store.ts` | Done — SQLite persistence (better-sqlite3), items/entities/relations/timeline tables, FTS5 full-text search, cosine similarity vector search, WAL mode |
+| Embeddings | `src/chronicle/embeddings.ts` | Done — Vercel AI SDK embedding generation, OpenAI/Ollama provider support, batch embedding |
+| Knowledge graph | `src/chronicle/graph.ts` | Done — entity/relation management, graph traversal with depth control, text formatting |
+| Timeline | `src/chronicle/timeline.ts` | Done — decision records, item history, temporal snapshots, formatted output |
+| NL query engine | `src/chronicle/query.ts` | Done — hybrid search (keyword + semantic), RAG-powered Q&A with citations, graceful LLM fallback |
+| Chronicle MCP tools | `src/mcp/tools/chronicle-tools.ts` | Done — 8 tools: search, read, write, ask, graph, timeline, entity, stats |
+| Chronicle CLI | `src/commands/chronicle.ts` | Done — `chronicle init/push/search/ask/graph/timeline/stats` |
+| MCP capability gating | `src/mcp/server.ts` | Done — registers chronicle_* tools only when initialized |
+
+**Dependencies added:** `better-sqlite3`, `@types/better-sqlite3`
+
+**Tested commands:**
+- `llm-collab --help` (shows all 10 commands)
+- `llm-collab chronicle --help` (shows 7 subcommands)
+- `llm-collab chronicle init` (creates SQLite DB, idempotent)
+- `llm-collab chronicle push "..."` (adds knowledge/decision items)
+- `llm-collab chronicle search "query"` (FTS5 keyword search)
+- `llm-collab chronicle stats` (shows item/entity/relation counts)
+- `llm-collab chronicle timeline` (shows chronological activity)
+- Typecheck passes (`npx tsc --noEmit`)
+
+### Phases 6–12 — NOT STARTED
 
 See phase descriptions above for full details.
 
@@ -812,6 +839,7 @@ src/
 ├── commands/
 │   ├── audit.ts             # Audit log viewer (show/tail/dates)
 │   ├── chat.ts              # Interactive AI chat REPL with streaming
+│   ├── chronicle.ts         # Chronicle CLI (init, push, search, ask, graph, timeline, stats)
 │   ├── config-cmd.ts        # Config get/set/list/path with audit logging
 │   ├── costs.ts             # Token usage and cost viewer
 │   ├── github.ts            # GitHub CLI (issues, PRs, CI status)
@@ -819,6 +847,12 @@ src/
 │   ├── mcp.ts               # MCP server command (stdio/http)
 │   ├── relay.ts             # LLM relay proxy command
 │   └── setup.ts             # Interactive wizard with audit logging
+├── chronicle/
+│   ├── embeddings.ts        # Vector embedding generation (Vercel AI SDK)
+│   ├── graph.ts             # Knowledge graph (entities, relations, traversal)
+│   ├── query.ts             # NL query engine (RAG with citations)
+│   ├── store.ts             # SQLite persistence layer (better-sqlite3)
+│   └── timeline.ts          # Temporal versioning and decision log
 ├── config/
 │   ├── config-manager.ts    # ConfigManager singleton
 │   └── schemas.ts           # Zod schemas for all config
@@ -829,6 +863,7 @@ src/
 ├── mcp/
 │   ├── server.ts            # MCP server builder with capability gating
 │   └── tools/
+│       ├── chronicle-tools.ts # 8 Chronicle MCP tools (search, read, write, ask, graph, timeline, entity, stats)
 │       ├── file-tools.ts    # file_read, file_write, file_list, file_search
 │       ├── github-tools.ts  # 10 GitHub MCP tools (issues, PRs, CI, comments)
 │       ├── linear-tools.ts  # 7 Linear MCP tools (issues, teams, projects)
@@ -855,19 +890,15 @@ pnpm install
 
 # Verify current state
 pnpm typecheck              # Should pass clean
-npx tsx src/index.ts --help  # Should show all 9 commands
+npx tsx src/index.ts --help  # Should show all 10 commands
 
-# Start Phase 5 (Chronicle Knowledge System)
-# 1. pnpm add better-sqlite3 @types/better-sqlite3
-# 2. Create src/chronicle/store.ts — SQLite persistence layer
-# 3. Create src/chronicle/embeddings.ts — Vector embedding generation
-# 4. Create src/chronicle/graph.ts — Knowledge graph (entities + relations)
-# 5. Create src/chronicle/timeline.ts — Temporal versioning
-# 6. Create src/chronicle/query.ts — NL query engine
-# 7. Create src/mcp/tools/chronicle-tools.ts — Chronicle MCP tools
-# 8. Create src/commands/chronicle.ts — CLI commands
-# 9. Wire into src/index.ts and src/mcp/server.ts
-# 10. Test: llm-collab chronicle init && llm-collab chronicle search "test"
+# Start Phase 6 (Agent System & Multi-Agent Delegation)
+# 1. Create src/config/sub-agents.ts — domain agent definitions
+# 2. Create src/commands/agent.ts — agent launcher (claude, codex, opencode)
+# 3. Generate ~/.claude/agents/ YAML+markdown files from sub-agent configs
+# 4. Implement complexity routing in agent launcher
+# 5. Wire into src/index.ts
+# 6. Test: llm-collab agent claude --help
 ```
 
 ## Audit Log Format
