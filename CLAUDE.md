@@ -776,17 +776,29 @@ All items implemented and tested:
 - `llm-collab mcp http --help` (shows port option)
 - Typecheck passes (`npx tsc --noEmit`)
 
-### Phase 4: Service Integrations — NOT STARTED (next)
+### Phase 4: Service Integrations — COMPLETE
 
-**To implement:**
-1. `src/services/github-service.ts` — Octokit REST + GraphQL
-2. `src/mcp/tools/github-tools.ts` — github_* MCP tools
-3. `src/commands/github.ts` — CLI commands
-4. `src/services/linear-service.ts` — @linear/sdk
-5. `src/mcp/tools/linear-tools.ts` — linear_* MCP tools
-6. `src/commands/linear.ts` — CLI commands
+All items implemented and tested:
 
-**Dependencies to add:** `@octokit/rest`, `@octokit/graphql`, `@linear/sdk`
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| GitHub service | `src/services/github-service.ts` | Done — Octokit REST + GraphQL, issues, PRs, search, CI status, comments |
+| GitHub MCP tools | `src/mcp/tools/github-tools.ts` | Done — 10 tools: get_issue, search_issues, list_issues, create_issue, get_pr, list_prs, create_pr, ci_status, get_repo, add_comment |
+| GitHub CLI | `src/commands/github.ts` | Done — `github issues list/get/search/create`, `github prs list/get`, `github ci` |
+| Linear service | `src/services/linear-service.ts` | Done — @linear/sdk, issues, search, teams, projects, create/update |
+| Linear MCP tools | `src/mcp/tools/linear-tools.ts` | Done — 7 tools: get_issue, search_issues, list_issues, create_issue, update_issue, list_teams, list_projects |
+| Linear CLI | `src/commands/linear.ts` | Done — `linear issues list/get/search/create`, `linear teams`, `linear projects` |
+| MCP capability gating | `src/mcp/server.ts` | Done — registers github_*/linear_* tools only when configured |
+
+**Dependencies added:** `@octokit/rest`, `@octokit/graphql`, `@linear/sdk`
+
+**Tested commands:**
+- `llm-collab --help` (shows all 9 commands)
+- `llm-collab github --help` / `github issues --help` / `github prs --help`
+- `llm-collab linear --help` / `linear issues --help`
+- `llm-collab github issues list <repo>` (graceful error when unconfigured)
+- `llm-collab linear issues list` (graceful error when unconfigured)
+- Typecheck passes (`npx tsc --noEmit`)
 
 ### Phases 5–12 — NOT STARTED
 
@@ -802,6 +814,8 @@ src/
 │   ├── chat.ts              # Interactive AI chat REPL with streaming
 │   ├── config-cmd.ts        # Config get/set/list/path with audit logging
 │   ├── costs.ts             # Token usage and cost viewer
+│   ├── github.ts            # GitHub CLI (issues, PRs, CI status)
+│   ├── linear.ts            # Linear CLI (issues, teams, projects)
 │   ├── mcp.ts               # MCP server command (stdio/http)
 │   ├── relay.ts             # LLM relay proxy command
 │   └── setup.ts             # Interactive wizard with audit logging
@@ -816,10 +830,14 @@ src/
 │   ├── server.ts            # MCP server builder with capability gating
 │   └── tools/
 │       ├── file-tools.ts    # file_read, file_write, file_list, file_search
+│       ├── github-tools.ts  # 10 GitHub MCP tools (issues, PRs, CI, comments)
+│       ├── linear-tools.ts  # 7 Linear MCP tools (issues, teams, projects)
 │       └── system-tools.ts  # shell_execute, env_get, system_info
 ├── services/
 │   ├── ai-service.ts        # Multi-provider LLM abstraction (Vercel AI SDK)
 │   ├── cost-tracker.ts      # Token/cost tracking with JSONL persistence
+│   ├── github-service.ts    # GitHub REST + GraphQL via Octokit
+│   ├── linear-service.ts    # Linear API via @linear/sdk
 │   └── relay-server.ts      # Express.js HTTP proxy with key injection
 └── utils/
     ├── errors.ts            # Typed error classes
@@ -837,15 +855,19 @@ pnpm install
 
 # Verify current state
 pnpm typecheck              # Should pass clean
-npx tsx src/index.ts --help  # Should show all commands
+npx tsx src/index.ts --help  # Should show all 9 commands
 
-# Start Phase 4 (Service Integrations)
-# 1. pnpm add @octokit/rest @octokit/graphql @linear/sdk
-# 2. Create src/services/github-service.ts
-# 3. Create src/mcp/tools/github-tools.ts
-# 4. Create src/commands/github.ts
-# 5. Wire into src/index.ts and src/mcp/server.ts
-# 6. Test: llm-collab github issues search "bug"
+# Start Phase 5 (Chronicle Knowledge System)
+# 1. pnpm add better-sqlite3 @types/better-sqlite3
+# 2. Create src/chronicle/store.ts — SQLite persistence layer
+# 3. Create src/chronicle/embeddings.ts — Vector embedding generation
+# 4. Create src/chronicle/graph.ts — Knowledge graph (entities + relations)
+# 5. Create src/chronicle/timeline.ts — Temporal versioning
+# 6. Create src/chronicle/query.ts — NL query engine
+# 7. Create src/mcp/tools/chronicle-tools.ts — Chronicle MCP tools
+# 8. Create src/commands/chronicle.ts — CLI commands
+# 9. Wire into src/index.ts and src/mcp/server.ts
+# 10. Test: llm-collab chronicle init && llm-collab chronicle search "test"
 ```
 
 ## Audit Log Format
